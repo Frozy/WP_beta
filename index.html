@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PIXEL WARRIOR</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; font-family: 'Press Start 2P', monospace; color: #000; }
+  #game-container { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
+  
+  #hud { position: absolute; top: 0; left: 0; right: 0; padding: 8px; z-index: 10; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+  .hud-row { display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #fff; text-shadow: 1px 1px 0 #000; }
+  .progress-wrap { height: 14px; background: #fff; border: 2px solid #000; box-shadow: inset -2px -2px 0 0 #888, inset 2px 2px 0 0 #fff, 2px 2px 0 0 #000; padding: 2px; }
+  .progress-bar { height: 100%; background: #2ecc40; width: 0%; transition: width 0.3s; }
+  
+  #canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #87ceeb; min-height: 200px; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  
+  #controls { position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; z-index: 10; display: flex; justify-content: space-between; pointer-events: none; }
+  .ctrl-group { display: flex; gap: 12px; pointer-events: auto; align-items: flex-end; }
+  .ctrl-btn { width: 60px; height: 60px; background: rgba(255,255,255,0.5); border: 3px solid #000; box-shadow: inset -2px -2px 0 0 #888, inset 2px 2px 0 0 #fff, 3px 3px 0 0 #000; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; transition: transform 0.08s, box-shadow 0.08s; }
+  .ctrl-btn.pressed {
+    box-shadow: inset 2px 2px 0 0 #888, inset -2px -2px 0 0 #fff, 1px 1px 0 0 #000 !important;
+    transform: translate(2px, 2px) !important;
+    background: rgba(255,255,255,0.7);
+  }
+  .ctrl-btn svg { width: 30px; height: 30px; pointer-events: none; }
+  .ctrl-btn.attack { width: 75px; height: 75px; background: rgba(255,255,255,0.6); }
+  .ctrl-btn.attack svg { width: 40px; height: 40px; }
+  .ctrl-btn.ultra { width: 65px; height: 65px; background: rgba(243,156,18,0.6); }
+  .ctrl-btn.ultra.ready { background: rgba(243,156,18,0.9); animation: pulse 1s infinite; }
+  .ctrl-btn.ultra:disabled { opacity: 0.4; animation: none; }
+  .ctrl-btn.pause { width: 45px; height: 45px; margin: 0; }
+  .ctrl-btn.pause svg { width: 22px; height: 22px; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  
+  .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.97); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; overflow-y: auto; }
+  .overlay.active { display: flex; }
+  .overlay h1 { font-size: 20px; margin: 15px 0; letter-spacing: 2px; text-align: center; }
+  .overlay h2 { font-size: 14px; margin: 15px 0 10px 0; border-bottom: 3px solid #000; padding-bottom: 8px; width: 100%; max-width: 600px; }
+  .pixel-btn { font-family: 'Press Start 2P', monospace; font-size: 11px; padding: 12px 18px; background: #fff; color: #000; border: 3px solid #000; box-shadow: inset -3px -3px 0 0 #888, inset 3px 3px 0 0 #fff, 4px 4px 0 0 #000; cursor: pointer; margin: 6px; min-width: 180px; transition: transform 0.08s, box-shadow 0.08s; }
+  .pixel-btn:active, .pixel-btn.pressed { box-shadow: inset 3px 3px 0 0 #888, inset -3px -3px 0 0 #fff, 2px 2px 0 0 #000; transform: translate(2px,2px); }
+  .pixel-btn:disabled { color: #888; opacity: 0.6; }
+  .pixel-btn.small { font-size: 9px; padding: 8px 12px; min-width: 120px; }
+  
+  .tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 15px; max-width: 600px; }
+  .tab-btn { font-family: 'Press Start 2P', monospace; font-size: 9px; padding: 8px 12px; background: #fff; border: 2px solid #000; cursor: pointer; transition: transform 0.08s; }
+  .tab-btn.active { background: #000; color: #fff; }  .tab-btn:active { transform: translate(1px, 1px); }  
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; max-width: 600px; width: 100%; }
+  .shop-item { background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 0 #000; padding: 12px; text-align: center; }
+  .shop-item.selected { border-color: #2ecc40; box-shadow: 3px 3px 0 0 #2ecc40; background: #f0fff0; }
+  .shop-item h3 { font-size: 10px; margin-bottom: 8px; }
+  .shop-item p { font-size: 8px; margin-bottom: 6px; color: #666; line-height: 1.5; }
+  .shop-item .price { font-size: 9px; margin-bottom: 8px; color: #f39c12; }
+  .shop-item .bonus { font-size: 8px; color: #27ae60; margin-bottom: 6px; font-weight: bold; }
+  .shop-item .type-tag { font-size: 7px; padding: 3px 6px; display: inline-block; margin-bottom: 6px; border: 1px solid #000; }
+  .shop-item .type-tag.melee { background: #e74c3c; color: #fff; }
+  .shop-item .type-tag.ranged { background: #3498db; color: #fff; }
+  .stats { font-size: 10px; margin: 8px 0; text-align: center; }
+  .menu-btns { display: flex; flex-direction: column; align-items: center; margin: 15px 0; }
+  
+  .char-preview { width: 60px; height: 80px; margin: 10px auto; }
+  
+  @media (max-width: 600px) {
+    .ctrl-btn { width: 55px; height: 55px; }
+    .ctrl-btn.attack { width: 68px; height: 68px; }
+    .ctrl-btn.ultra { width: 60px; height: 60px; }
+    .ctrl-btn.pause { width: 40px; height: 40px; }
+    .overlay h1 { font-size: 16px; }
+    .pixel-btn { font-size: 9px; padding: 10px 14px; min-width: 150px; }
+  }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <div id="hud">
+    <div style="position: absolute; top: 8px; left: 8px; z-index: 11; pointer-events: auto;">
+      <button class="ctrl-btn pause" id="btn-pause"><svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></button>
+    </div>
+    <div class="hud-row" style="padding-left: 60px;">
+      <span id="level-display">УРОВЕНЬ 1</span>
+      <span id="coins-display">💰 0</span>
+    </div>
+    <div class="progress-wrap" style="width: calc(100% - 60px); margin-left: 60px;">
+      <div id="level-progress" class="progress-bar"></div>
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="game"></canvas>
+  </div>
+
+  <div id="controls">
+    <div class="ctrl-group">
+      <button class="ctrl-btn" id="btn-left"><svg viewBox="0 0 24 24" fill="#000"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="ctrl-btn" id="btn-up"><svg viewBox="0 0 24 24" fill="#000"><path d="M18 15l-6-6-6 6"/></svg></button>
+      <button class="ctrl-btn" id="btn-right"><svg viewBox="0 0 24 24" fill="#000"><path d="M9 18l6-6-6-6"/></svg></button>    </div>
+    <div class="ctrl-group">
+      <button class="ctrl-btn ultra" id="btn-ultra" style="display:none;"><svg viewBox="0 0 24 24" fill="#000"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>
+      <button class="ctrl-btn attack" id="btn-attack"><svg viewBox="0 0 24 24" fill="#000"><path d="M18 2L22 6L10 18L6 18L6 14Z M3 21L7 17"/></svg></button>
+    </div>
+  </div>
+
+  <div id="menu-screen" class="overlay active">
+    <h1>⚔️ PIXEL WARRIOR</h1>
+    <div class="menu-btns">
+      <button class="pixel-btn" id="btn-start">▶ ИГРАТЬ</button>
+      <button class="pixel-btn" id="btn-characters-menu">👤 ПЕРСОНАЖИ</button>
+      <button class="pixel-btn" id="btn-shop-menu">🛒 МАГАЗИН</button>
+      <button class="pixel-btn" id="btn-upgrades-menu">⬆️ УЛУЧШЕНИЯ</button>
+      <button class="pixel-btn" id="btn-ultra-menu">⚡ СУПЕР-АТАКИ</button>
+      <button class="pixel-btn" id="btn-gang-menu" style="display:none;">👥 БАНДА</button>
+      <button class="pixel-btn small" id="btn-fullscreen">🖥️ ПОЛНЫЙ ЭКРАН</button>
+      <button class="pixel-btn small" id="btn-reset">СБРОС</button>
+    </div>
+  </div>
+
+  <div id="pause-screen" class="overlay">
+    <h1>⏸️ ПАУЗА</h1>
+    <div class="menu-btns">
+      <button class="pixel-btn" id="btn-resume">▶ ПРОДОЛЖИТЬ</button>
+      <button class="pixel-btn" id="btn-shop-pause">🛒 МАГАЗИН</button>
+      <button class="pixel-btn" id="btn-upgrades-pause">⬆️ УЛУЧШЕНИЯ</button>
+      <button class="pixel-btn" id="btn-main-menu">🏠 ГЛАВНОЕ МЕНЮ</button>
+    </div>
+  </div>
+
+  <div id="characters-screen" class="overlay">
+    <h1>👤 ПЕРСОНАЖИ</h1>
+    <div class="stats" id="char-coins">💰 0</div>
+    <div class="shop-grid" id="char-items"></div>
+    <button class="pixel-btn" id="btn-characters-close" style="margin-top:20px;">← НАЗАД</button>
+  </div>
+
+  <div id="shop-screen" class="overlay">
+    <h1>🛒 МАГАЗИН ОРУЖИЯ</h1>
+    <div class="stats" id="shop-coins">💰 0</div>
+    <div class="shop-grid" id="shop-items"></div>
+    <button class="pixel-btn" id="btn-shop-close" style="margin-top:20px;">← НАЗАД</button>
+  </div>
+
+  <div id="upgrades-screen" class="overlay">
+    <h1>⬆️ УЛУЧШЕНИЯ</h1>
+    <div class="stats" id="upgrades-coins">💰 0</div>
+    <div class="shop-grid" id="upgrades-items"></div>
+    <button class="pixel-btn" id="btn-upgrades-close" style="margin-top:20px;">← НАЗАД</button>  </div>
+  <div id="ultra-screen" class="overlay">
+    <h1>⚡ СУПЕР-АТАКИ</h1>
+    <div class="stats" id="ultra-coins">💰 0</div>
+    <div class="shop-grid" id="ultra-items"></div>
+    <button class="pixel-btn" id="btn-ultra-close" style="margin-top:20px;">← НАЗАД</button>
+  </div>
+
+  <div id="gang-screen" class="overlay">
+    <h1>👥 БАНДА</h1>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="recruit">НАНЯТЬ</button>
+      <button class="tab-btn" data-tab="upgrade">УЛУЧШИТЬ</button>
+    </div>
+    <div class="stats" id="gang-coins">💰 0</div>
+    <div class="shop-grid" id="gang-items"></div>
+    <button class="pixel-btn" id="btn-gang-close" style="margin-top:20px;">← НАЗАД</button>
+  </div>
+
+  <div id="boss-dialogue-screen" class="overlay">
+    <h2 id="boss-dialogue-title">БОСС</h2>
+    <div id="boss-dialogue-text" style="font-size:10px; line-height:1.8; margin:20px; max-width:500px; text-align:center;"></div>
+    <button class="pixel-btn" id="btn-boss-continue">ПРОДОЛЖИТЬ</button>
+  </div>
+
+  <div id="death-screen" class="overlay">
+    <h1>💀 ПОРАЖЕНИЕ</h1>
+    <div class="menu-btns">
+      <button class="pixel-btn" id="btn-retry">🔄 ЗАНОВО</button>
+      <button class="pixel-btn" id="btn-death-menu">🏠 МЕНЮ</button>
+    </div>
+  </div>
+
+  <div id="victory-screen" class="overlay">
+    <h1>🏆 ПОБЕДА!</h1>
+    <div id="victory-text" style="font-size:10px; line-height:1.8; margin:20px; max-width:500px; text-align:center;"></div>
+    <button class="pixel-btn" id="btn-victory-continue">ПРОДОЛЖИТЬ</button>
+  </div>
+
+  <div id="level-complete-screen" class="overlay">
+    <h1>🏆 УРОВЕНЬ ПРОЙДЕН!</h1>
+    <div class="menu-btns">
+      <button class="pixel-btn" id="btn-lc-continue">▶ ПРОДОЛЖИТЬ</button>
+      <button class="pixel-btn" id="btn-lc-menu">🏠 ГЛАВНОЕ МЕНЮ</button>
+    </div>
+  </div>
+
+  <div id="ultra-warning-screen" class="overlay">
+    <h1>⚠️ ВНИМАНИЕ</h1>
+    <p style="font-size:10px; margin:20px; text-align:center; line-height: 1.8;">Для открытия СУПЕР-АТАК необходимо достичь 30 уровня!</p>    <p id="ultra-warning-level" style="font-size:10px; margin-bottom:20px; text-align:center; color:#e74c3c;"></p>
+    <button class="pixel-btn" id="btn-ultra-warning-close">ЗАКРЫТЬ</button>
+  </div>
+
+  <div id="delete-gang-screen" class="overlay">
+    <h1>🗑️ УДАЛИТЬ?</h1>
+    <p style="font-size:10px; margin:20px; text-align:center; line-height: 1.8;">Вы уверены, что хотите удалить этого союзника?<br>Это действие необратимо.</p>
+    <div class="menu-btns">
+      <button class="pixel-btn small" id="btn-confirm-delete" style="background:#e74c3c; color:#fff; border-color:#c0392b;">ДА, УДАЛИТЬ</button>
+      <button class="pixel-btn small" id="btn-cancel-delete">ОТМЕНА</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  try {
+    const SAVE_KEY = 'pixel_warrior_v8';
+    let state = {
+      level: 1, coins: 0,
+      weaponIndex: 0,
+      unlockedWeapons: [0],
+      damage: 10,
+      maxHp: 100, hpLvl: 0,
+      speed: 3, speedLvl: 0, dmgLvl: 0,
+      gang: [],
+      ultraUnlocked: false, ultraLvl: 1, ultraReady: true, ultraCooldown: 0,
+      characterId: 'warrior',
+      unlockedChars: ['warrior'],
+      returnTo: 'menu'
+    };
+
+    const characters = [
+      { 
+        id: 'warrior', name: '🗡️ ВОИН', desc: 'Классический боец',
+        bonus: '+20% урон ближнего боя',
+        cost: 0,
+        color: '#3498db',
+        bodyColor: '#ffffff',
+        mods: { meleeDmg: 1.2, rangedDmg: 1.0, hp: 1.0, speed: 1.0, ultraDmg: 1.0, coinBonus: 1.0 }
+      },
+      {
+        id: 'archer', name: '🏹 СТРЕЛОК', desc: 'Мастер дальнего боя',
+        bonus: '+30% урон огнестрела',
+        cost: 500,
+        color: '#27ae60',
+        bodyColor: '#e8f5e9',
+        mods: { meleeDmg: 1.0, rangedDmg: 1.3, hp: 0.9, speed: 1.0, ultraDmg: 1.0, coinBonus: 1.0 }
+      },      {
+        id: 'tank', name: '🛡️ ТАНК', desc: 'Непробиваемая стена',
+        bonus: '+60% HP, -15% скорость',
+        cost: 800,
+        color: '#7f8c8d',
+        bodyColor: '#ecf0f1',
+        mods: { meleeDmg: 0.9, rangedDmg: 0.9, hp: 1.6, speed: 0.85, ultraDmg: 1.0, coinBonus: 1.0 }
+      },
+      {
+        id: 'runner', name: '🏃 Бегун', desc: 'Быстрый как ветер',
+        bonus: '+50% скорость, +20% урон',
+        cost: 1000,
+        color: '#f39c12',
+        bodyColor: '#fff9e6',
+        mods: { meleeDmg: 1.2, rangedDmg: 1.2, hp: 0.85, speed: 1.5, ultraDmg: 1.0, coinBonus: 1.0 }
+      },
+      {
+        id: 'mage', name: '🔮 МАГ', desc: 'Повелитель ульты',
+        bonus: '+100% урон ультой',
+        cost: 1500,
+        color: '#9b59b6',
+        bodyColor: '#f4ecf7',
+        mods: { meleeDmg: 0.8, rangedDmg: 1.1, hp: 0.9, speed: 1.0, ultraDmg: 2.0, coinBonus: 1.0 }
+      },
+      {
+        id: 'merchant', name: '💰 ТОРГОВЕЦ', desc: 'Деньги — его стихия',
+        bonus: '+50% монет с врагов',
+        cost: 2000,
+        color: '#f1c40f',
+        bodyColor: '#fffde7',
+        mods: { meleeDmg: 1.0, rangedDmg: 1.0, hp: 1.0, speed: 1.0, ultraDmg: 1.0, coinBonus: 1.5 }
+      }
+    ];
+
+    function getCharacter() {
+      return characters.find(c => c.id === state.characterId) || characters[0];
+    }
+
+    function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {} }
+    function load() {
+      try {
+        const s = localStorage.getItem(SAVE_KEY);
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (parsed && typeof parsed === 'object') {
+            Object.assign(state, parsed);
+            if (!state.unlockedWeapons) {
+              state.unlockedWeapons = [];
+              for (let i = 0; i <= state.weaponIndex; i++) {
+                state.unlockedWeapons.push(i);              }
+            }
+          }
+        }
+      } catch(e) {}
+      if (state.level >= 30) state.ultraUnlocked = true;
+    }
+    function resetGame() {
+      if (confirm('Сбросить прогресс?')) { localStorage.removeItem(SAVE_KEY); location.reload(); }
+    }
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    document.addEventListener('touchstart', initAudio, { once: true });
+    document.addEventListener('mousedown', initAudio, { once: true });
+    document.addEventListener('keydown', initAudio, { once: true });
+
+    function createNoiseBuffer(duration = 0.1) {
+      if (!audioCtx) return null;
+      const bufferSize = audioCtx.sampleRate * duration;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      return buffer;
+    }
+    function playSound(type) {
+      if (!audioCtx) return;
+      try {
+        const now = audioCtx.currentTime;
+        if (type === 'sword') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(120, now);
+          osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.15);
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = createNoiseBuffer(0.05);
+          const nGain = audioCtx.createGain();
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass'; filter.frequency.value = 800;
+          nGain.gain.setValueAtTime(0.2, now);          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          noise.connect(filter); filter.connect(nGain); nGain.connect(audioCtx.destination);
+          noise.start(now); noise.stop(now + 0.05);
+        }
+        else if (type === 'gun') {
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = createNoiseBuffer(0.08);
+          const nGain = audioCtx.createGain();
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'highpass'; filter.frequency.value = 1000;
+          nGain.gain.setValueAtTime(0.4, now);
+          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          noise.connect(filter); filter.connect(nGain); nGain.connect(audioCtx.destination);
+          noise.start(now); noise.stop(now + 0.08);
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.1);
+        }
+        else if (type === 'shotgun') {
+          for (let i = 0; i < 3; i++) {
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = createNoiseBuffer(0.12);
+            const nGain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = 1500;
+            const t = now + i * 0.01;
+            nGain.gain.setValueAtTime(0.3, t);
+            nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+            noise.connect(filter); filter.connect(nGain); nGain.connect(audioCtx.destination);
+            noise.start(t); noise.stop(t + 0.12);
+          }
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(80, now);
+          osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.2);
+        }
+        else if (type === 'hit') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();          osc.type = 'square';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.08);
+        }
+        else if (type === 'hurt') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.2);
+        }
+        else if (type === 'death') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.3);
+        }
+        else if (type === 'coin') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1200, now);
+          osc.frequency.setValueAtTime(1600, now + 0.05);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.15);
+        }
+        else if (type === 'ultra') {
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = createNoiseBuffer(0.4);
+          const nGain = audioCtx.createGain();
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(3000, now);
+          filter.frequency.exponentialRampToValueAtTime(200, now + 0.4);
+          nGain.gain.setValueAtTime(0.5, now);          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          noise.connect(filter); filter.connect(nGain); nGain.connect(audioCtx.destination);
+          noise.start(now); noise.stop(now + 0.4);
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(100, now);
+          osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.5);
+        }
+        else if (type === 'jump') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.1);
+        }
+        else if (type === 'buy') {
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = 'sine'; osc1.frequency.value = 800;
+          gain1.gain.setValueAtTime(0.2, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc1.connect(gain1); gain1.connect(audioCtx.destination);
+          osc1.start(now); osc1.stop(now + 0.1);
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'sine'; osc2.frequency.value = 1200;
+          gain2.gain.setValueAtTime(0.001, now);
+          gain2.gain.setValueAtTime(0.2, now + 0.1);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc2.connect(gain2); gain2.connect(audioCtx.destination);
+          osc2.start(now + 0.1); osc2.stop(now + 0.25);
+        }
+        else if (type === 'arrow') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(400, now + 0.15);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain); gain.connect(audioCtx.destination);          osc.start(now); osc.stop(now + 0.15);
+        }
+        else if (type === 'magic') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(500, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.2);
+        }
+      } catch(e) {}
+    }
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    let W = 800, H = 400;
+
+    function resize() {
+      const wrap = document.getElementById('canvas-wrap');
+      const rect = wrap.getBoundingClientRect();
+      W = Math.max(300, rect.width);
+      H = Math.max(200, rect.height);
+      canvas.width = W;
+      canvas.height = H;
+    }
+    window.addEventListener('resize', resize);
+    setTimeout(resize, 50);
+    setTimeout(resize, 200);
+
+    const GROUND_Y = () => H - 50;
+    const GRAVITY = 0.6;
+
+    let player = null, enemies = [], helpers = [], particles = [], coins = [], projectiles = [];
+    let levelKilled = 0, levelTotal = 0, isBoss = false, bossDefeated = false;
+    let gameRunning = false, gamePaused = false;
+    let keys = { left: false, right: false, up: false };
+    let attackCooldown = 0, spawnTimer = 0, cameraShake = 0;
+
+    const weapons = [
+      { name: '🗡️ ДЕРЕВЯННЫЙ МЕЧ', desc: 'Стартовое оружие', cost: 0, dmg: 10, type: 'melee', range: 45, color: '#8b4513', color2: '#654321', sound: 'sword' },
+      { name: '⚔️ ЖЕЛЕЗНЫЙ МЕЧ', desc: 'Крепкий клинок', cost: 80, dmg: 15, type: 'melee', range: 55, color: '#7f8c8d', color2: '#95a5a6', sound: 'sword' },
+      { name: '🗡️ СТАЛЬНОЙ МЕЧ', desc: 'Острая сталь', cost: 200, dmg: 20, type: 'melee', range: 65, color: '#bdc3c7', color2: '#ecf0f1', sound: 'sword' },
+      { name: '⚔️ СЕРЕБРЯНЫЙ МЕЧ', desc: 'Благородный металл', cost: 400, dmg: 25, type: 'melee', range: 75, color: '#ecf0f1', color2: '#ffffff', sound: 'sword' },
+      { name: '🔥 ОГНЕННЫЙ МЕЧ', desc: 'Пылающий клинок', cost: 700, dmg: 30, type: 'melee', range: 80, color: '#e74c3c', color2: '#f39c12', sound: 'sword' },
+      { name: '💎 АЛМАЗНЫЙ МЕЧ', desc: 'Невероятная острота', cost: 1200, dmg: 35, type: 'melee', range: 85, color: '#3498db', color2: '#85c1e9', sound: 'sword' },
+      { name: '⚡ ГРОМОВОЙ МЕЧ', desc: 'Заряжен молнией', cost: 2000, dmg: 40, type: 'melee', range: 90, color: '#f1c40f', color2: '#f39c12', sound: 'sword' },
+      { name: '🌟 ЛЕГЕНДАРНЫЙ МЕЧ', desc: 'Легендарная мощь', cost: 3500, dmg: 50, type: 'melee', range: 100, color: '#f39c12', color2: '#fff', sound: 'sword' },      { name: '🔫 ПИСТОЛЕТ', desc: 'Одна пуля', cost: 500, dmg: 18, type: 'ranged', range: 300, projSpeed: 10, projCount: 1, spread: 0, color: '#2c3e50', color2: '#34495e', sound: 'gun' },
+      { name: '🔫 ДРОБОВИК', desc: '5 дробинок веером!', cost: 1500, dmg: 12, type: 'ranged', range: 200, projSpeed: 9, projCount: 5, spread: 0.4, color: '#8b4513', color2: '#2c3e50', sound: 'shotgun' },
+      { name: '⚙️ АВТОМАТ', desc: 'Быстрая стрельба', cost: 2500, dmg: 8, type: 'ranged', range: 350, projSpeed: 14, projCount: 3, spread: 0.15, color: '#2c3e50', color2: '#7f8c8d', sound: 'gun' },
+      { name: '🎯 СНАЙПЕРКА', desc: 'Одна мощная пуля', cost: 4000, dmg: 80, type: 'ranged', range: 500, projSpeed: 20, projCount: 1, spread: 0, color: '#27ae60', color2: '#2c3e50', sound: 'gun' }
+    ];
+
+    function getCurrentWeapon() { return weapons[state.weaponIndex] || weapons[0]; }
+
+    function createPlayer() {
+      const char = getCharacter();
+      const hp = Math.floor(state.maxHp * char.mods.hp);
+      return {
+        x: 100, y: GROUND_Y() - 50, w: 30, h: 50,
+        vx: 0, vy: 0, hp, maxHp: hp,
+        onGround: true, facing: 1, attackTimer: 0, invuln: 0,
+        walkFrame: 0
+      };
+    }
+
+    function createEnemy(isBossEnt = false, forceType = null) {
+      const lvl = state.level;
+      let type = forceType;
+      if (!type) {
+        const r = Math.random();
+        if (lvl < 5) type = 'warrior';
+        else if (lvl < 10) type = r < 0.7 ? 'warrior' : 'archer';
+        else if (lvl < 20) type = r < 0.5 ? 'warrior' : (r < 0.8 ? 'archer' : 'gunner');
+        else if (lvl < 40) type = r < 0.35 ? 'warrior' : (r < 0.6 ? 'archer' : (r < 0.85 ? 'gunner' : 'mage'));
+        else type = r < 0.25 ? 'warrior' : (r < 0.5 ? 'archer' : (r < 0.75 ? 'gunner' : 'mage'));
+      }
+      
+      const bossMult = isBossEnt ? 3 : 1;
+      const hp = (20 + lvl * 10) * bossMult * (type === 'mage' ? 0.8 : 1);
+      const dmg = Math.floor((4 + lvl / 3) * (isBossEnt ? 2.5 : 1) * (type === 'mage' ? 1.3 : 1));
+      const size = isBossEnt ? 70 : (type === 'mage' ? 38 : 32);
+      
+      const stats = {
+        warrior: { speed: 1 + lvl * 0.06, range: 0, shootCd: 0, color: '#c0392b' },
+        archer:  { speed: 0.8 + lvl * 0.04, range: 250, shootCd: 90, color: '#d35400' },
+        gunner:  { speed: 0.9 + lvl * 0.04, range: 280, shootCd: 70, color: '#34495e' },
+        mage:    { speed: 0.7 + lvl * 0.03, range: 220, shootCd: 110, color: '#8e44ad' }
+      }[type];
+      
+      return {
+        x: W + 30, y: GROUND_Y() - size, w: size, h: size,
+        vx: isBossEnt ? -0.8 : -stats.speed, vy: 0,
+        hp, maxHp: hp, damage: dmg, isBoss: isBossEnt,
+        type, attackCooldown: 0, shootCooldown: Math.floor(Math.random() * 60),
+        hitFlash: 0, stopRange: stats.range, shootCd: stats.shootCd,
+        color: isBossEnt ? '#8e1a1a' : stats.color,        knockback: 0, walkFrame: 0
+      };
+    }
+
+    function createHelper(type, index) {
+      const stats = {
+        warrior: { hp: 60, damage: 8, speed: 2.2, color: '#27ae60', range: 40 },
+        archer:  { hp: 40, damage: 12, speed: 1.8, color: '#3498db', range: 200 },
+        mage:    { hp: 35, damage: 18, speed: 1.6, color: '#9b59b6', range: 180 }
+      }[type];
+      const gangData = state.gang.find(g => g.type === type);
+      const lvl = gangData ? gangData.level : 1;
+      return {
+        type, x: 40 + index * 40, y: GROUND_Y() - 40, w: 25, h: 40,
+        vx: 0, vy: 0, hp: stats.hp + lvl * 10, maxHp: stats.hp + lvl * 10,
+        damage: stats.damage + lvl * 3, speed: stats.speed,
+        color: stats.color, range: stats.range,
+        attackCooldown: 0, onGround: true, walkFrame: 0, hitFlash: 0
+      };
+    }
+
+    function startLevel() {
+      try {
+        resize();
+        player = createPlayer();
+        enemies = []; helpers = []; particles = []; coins = []; projectiles = [];
+        levelKilled = 0; bossDefeated = false;
+        isBoss = (state.level % 10 === 0);
+        levelTotal = isBoss ? 1 : 5 + Math.floor(state.level / 2);
+        spawnTimer = 0; attackCooldown = 0;
+        state.gang.forEach((g, i) => helpers.push(createHelper(g.type, i)));
+        gameRunning = true; gamePaused = false;
+        updateHUD();
+      } catch(e) { console.error('startLevel error:', e); }
+    }
+
+    function bindBtn(id, key) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const on = e => { e.preventDefault(); keys[key] = true; btn.classList.add('pressed'); };
+      const off = e => { e.preventDefault(); keys[key] = false; btn.classList.remove('pressed'); };
+      btn.addEventListener('touchstart', on, { passive: false });
+      btn.addEventListener('touchend', off, { passive: false });
+      btn.addEventListener('touchcancel', off, { passive: false });
+      btn.addEventListener('mousedown', on);
+      btn.addEventListener('mouseup', off);
+      btn.addEventListener('mouseleave', off);
+    }
+    bindBtn('btn-left', 'left');
+    bindBtn('btn-right', 'right');    bindBtn('btn-up', 'up');
+
+    function bindActionBtn(id, action) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const on = e => { e.preventDefault(); btn.classList.add('pressed'); action(); };
+      const off = e => { btn.classList.remove('pressed'); };
+      btn.addEventListener('touchstart', on, { passive: false });
+      btn.addEventListener('touchend', off, { passive: false });
+      btn.addEventListener('touchcancel', off, { passive: false });
+      btn.addEventListener('mousedown', on);
+      btn.addEventListener('mouseup', off);
+      btn.addEventListener('mouseleave', off);
+    }
+    bindActionBtn('btn-attack', doAttack);
+    bindActionBtn('btn-ultra', doUltra);
+    bindActionBtn('btn-pause', togglePause);
+
+    document.querySelectorAll('.pixel-btn, .tab-btn').forEach(btn => {
+      btn.addEventListener('touchstart', () => btn.classList.add('pressed'), { passive: true });
+      btn.addEventListener('touchend', () => btn.classList.remove('pressed'), { passive: true });
+      btn.addEventListener('touchcancel', () => btn.classList.remove('pressed'), { passive: true });
+    });
+
+    document.addEventListener('keydown', e => {
+      if (!gameRunning || gamePaused) return;
+      if (['ArrowLeft','a','A','ф','Ф'].includes(e.key)) keys.left = true;
+      if (['ArrowRight','d','D','в','В'].includes(e.key)) keys.right = true;
+      if (['ArrowUp','w','W','ц','Ц',' '].includes(e.key)) { 
+        if (!keys.up && player && player.onGround) playSound('jump');
+        keys.up = true; e.preventDefault(); 
+      }
+      if (['j','J','о','О'].includes(e.key)) doAttack();
+      if (['k','K','л','Л'].includes(e.key)) doUltra();
+      if (['Escape','p','P','з','З'].includes(e.key)) togglePause();
+    });
+    document.addEventListener('keyup', e => {
+      if (['ArrowLeft','a','A','ф','Ф'].includes(e.key)) keys.left = false;
+      if (['ArrowRight','d','D','в','В'].includes(e.key)) keys.right = false;
+      if (['ArrowUp','w','W','ц','Ц',' '].includes(e.key)) keys.up = false;
+    });
+
+    function doAttack() {
+      if (!gameRunning || gamePaused || !player) return;
+      if (attackCooldown > 0) return;
+      
+      const weapon = getCurrentWeapon();
+      const char = getCharacter();
+      attackCooldown = weapon.type === 'melee' ? 20 : 15;
+      player.attackTimer = 12;      
+      let dmgMult = weapon.type === 'melee' ? char.mods.meleeDmg : char.mods.rangedDmg;
+      const totalDmg = Math.floor((state.damage + (weapon.dmg - weapons[0].dmg)) * dmgMult);
+      
+      playSound(weapon.sound);
+      
+      if (weapon.type === 'melee') {
+        let hitSomething = false;
+        enemies.forEach(e => {
+          const dx = (e.x + e.w/2) - (player.x + player.w/2);
+          const dy = (e.y + e.h/2) - (player.y + player.h/2);
+          const absDx = Math.abs(dx);
+          const inRange = absDx < weapon.range && Math.abs(dy) < 60;
+          const correctDir = absDx < 30 || Math.sign(dx) === player.facing;
+          if (inRange && correctDir) {
+            damageEnemy(e, totalDmg);
+            e.knockback = player.facing * 8;
+            hitSomething = true;
+          }
+        });
+        if (hitSomething) playSound('hit');
+        
+        for (let i = 0; i < 6; i++) {
+          particles.push({
+            x: player.x + player.w/2 + player.facing * 25,
+            y: player.y + player.h/2,
+            vx: player.facing * (2 + Math.random() * 3),
+            vy: (Math.random() - 0.5) * 3,
+            life: 15, maxLife: 15, type: 'spark', color: weapon.color, size: 3
+          });
+        }
+      } else {
+        const baseX = player.x + player.w/2 + player.facing * 20;
+        const baseY = player.y + player.h/2;
+        for (let i = 0; i < weapon.projCount; i++) {
+          let angle = 0;
+          if (weapon.projCount > 1) angle = (i - (weapon.projCount - 1) / 2) * weapon.spread;
+          projectiles.push({
+            x: baseX, y: baseY,
+            vx: player.facing * weapon.projSpeed * Math.cos(angle),
+            vy: weapon.projSpeed * Math.sin(angle),
+            damage: totalDmg,
+            color: weapon.color,
+            life: 60,
+            fromPlayer: true,
+            size: weapon.name.includes('СНАЙПЕРК') ? 6 : (weapon.name.includes('ДРОБОВИК') ? 3 : 4)
+          });
+        }
+        for (let i = 0; i < 4; i++) {
+          particles.push({            x: baseX, y: baseY,
+            vx: player.facing * (3 + Math.random() * 2),
+            vy: (Math.random() - 0.5) * 2,
+            life: 8, maxLife: 8, type: 'spark', color: '#f39c12', size: 3
+          });
+        }
+      }
+    }
+
+    function doUltra() {
+      if (!state.ultraUnlocked || !state.ultraReady || !gameRunning || gamePaused) return;
+      state.ultraReady = false;
+      state.ultraCooldown = 30 * 60;
+      cameraShake = 20;
+      playSound('ultra');
+      const char = getCharacter();
+      const ultraDmg = Math.floor(state.damage * (3 + state.ultraLvl) * char.mods.ultraDmg);
+      enemies.forEach(e => {
+        damageEnemy(e, ultraDmg);
+        e.knockback = (e.x > player.x ? 1 : -1) * 15;
+      });
+      
+      // НОВЫЕ ЧАСТИЦЫ СУПЕР-АТАКИ (исчезающие)
+      for (let i = 0; i < 30; i++) {
+        particles.push({
+          x: player.x + player.w/2, y: player.y + player.h/2,
+          vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
+          life: 40, maxLife: 40, type: 'lightning', color: '#f39c12', size: 4
+        });
+      }
+      for (let i = 0; i < 15; i++) {
+        particles.push({
+          x: Math.random() * W, y: -30,
+          vx: (Math.random() - 0.5) * 2, vy: 6 + Math.random() * 6,
+          life: 60, maxLife: 60, type: 'meteor', color: '#e74c3c', size: 8
+        });
+      }
+      updateHUD();
+    }
+
+    function damageEnemy(e, dmg) {
+      e.hp -= dmg;
+      e.hitFlash = 8;
+      for (let i = 0; i < 4; i++) {
+        particles.push({
+          x: e.x + e.w/2, y: e.y + e.h/2,
+          vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
+          life: 15, maxLife: 15, type: 'spark', color: '#e74c3c', size: 3
+        });
+      }      if (e.hp <= 0) killEnemy(e);
+      else playSound('hit');
+    }
+
+    function killEnemy(e) {
+      playSound('death');
+      const char = getCharacter();
+      const baseReward = e.isBoss ? 50 + state.level * 5 : 5 + Math.floor(state.level / 2);
+      const reward = Math.floor(baseReward * char.mods.coinBonus);
+      const count = Math.min(reward, 8);
+      for (let i = 0; i < count; i++) {
+        coins.push({
+          x: e.x + e.w/2, y: e.y + e.h/2,
+          vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 5 - 2,
+          value: Math.ceil(reward / count), life: 180
+        });
+      }
+      levelKilled++;
+      if (e.isBoss) bossDefeated = true;
+      const idx = enemies.indexOf(e);
+      if (idx >= 0) enemies.splice(idx, 1);
+      updateHUD();
+    }
+
+    function damagePlayer(dmg, fromX) {
+      if (!player || player.invuln > 0) return;
+      player.hp -= dmg;
+      player.invuln = 30;
+      player.vx = Math.sign(player.x - fromX) * 5;
+      player.vy = -5;
+      cameraShake = 8;
+      playSound('hurt');
+      if (player.hp <= 0) { player.hp = 0; gameOver(); }
+    }
+
+    // НОВАЯ ФУНКЦИЯ: Удаление союзника
+    function killHelper(h) {
+      playSound('death');
+      const idx = helpers.indexOf(h);
+      if (idx >= 0) helpers.splice(idx, 1);
+      
+      const gIdx = state.gang.findIndex(g => g.type === h.type);
+      if (gIdx >= 0) {
+        state.gang.splice(gIdx, 1);
+        save();
+      }
+    }
+
+    function update() {
+      if (!gameRunning || gamePaused || !player) return;
+      const char = getCharacter();
+      const effectiveSpeed = state.speed * char.mods.speed;
+
+      if (keys.left) { player.vx = -effectiveSpeed; player.facing = -1; }
+      else if (keys.right) { player.vx = effectiveSpeed; player.facing = 1; }
+      else player.vx *= 0.7;
+      
+      if (Math.abs(player.vx) > 0.5 && player.onGround) {
+        player.walkFrame = (player.walkFrame + 0.2) % 4;
+      } else {
+        player.walkFrame = 0;
+      }
+      
+      if (keys.up && player.onGround) { 
+        player.vy = -12; 
+        player.onGround = false;
+      }
+      player.vy += GRAVITY;
+      player.x += player.vx; player.y += player.vy;
+      if (player.y + player.h >= GROUND_Y()) { player.y = GROUND_Y() - player.h; player.vy = 0; player.onGround = true; }
+      player.x = Math.max(0, Math.min(W - player.w, player.x));
+      if (player.attackTimer > 0) player.attackTimer--;
+      if (player.invuln > 0) player.invuln--;
+      if (attackCooldown > 0) attackCooldown--;
+
+      if (!state.ultraReady) {
+        state.ultraCooldown--;
+        if (state.ultraCooldown <= 0) state.ultraReady = true;
+        updateUltraBtn();
+      }
+
+      if (!isBoss && enemies.length < 3 && levelKilled + enemies.length < levelTotal) {
+        spawnTimer++;
+        if (spawnTimer > 90) { spawnTimer = 0; enemies.push(createEnemy(false)); }
+      } else if (isBoss && enemies.length === 0 && !bossDefeated && levelKilled === 0) {
+        enemies.push(createEnemy(true));
+      }
+
+      enemies.forEach(e => {
+        if (e.knockback) {
+          e.x += e.knockback;
+          e.knockback *= 0.7;
+          if (Math.abs(e.knockback) < 0.5) e.knockback = 0;
+          e.x = Math.max(0, Math.min(W - e.w, e.x));
+        }
+        
+        const dx = (player.x + player.w/2) - (e.x + e.w/2);
+        const dist = Math.abs(dx);
+        const dir = Math.sign(dx);        
+        if (Math.abs(e.vx) > 0.3) e.walkFrame = (e.walkFrame + 0.15) % 4;
+        
+        if (e.type === 'warrior') {
+          e.vx = dir * (e.isBoss ? 0.8 : (1 + state.level * 0.06));
+          
+          // Урон игроку
+          if (dist < e.w/2 + player.w/2 + 10 && e.attackCooldown <= 0 && player.invuln <= 0) {
+            damagePlayer(e.damage, e.x + e.w/2);
+            e.attackCooldown = 60;
+          }
+          // Урон союзникам (банде)
+          helpers.forEach(h => {
+            const distH = Math.abs((e.x + e.w/2) - (h.x + h.w/2));
+            if (distH < e.w/2 + h.w/2 + 10 && e.attackCooldown <= 0) {
+              h.hp -= Math.floor(e.damage * 0.8);
+              h.hitFlash = 8;
+              e.attackCooldown = 60;
+              if (h.hp <= 0) killHelper(h);
+            }
+          });
+        } else {
+          if (dist > e.stopRange + 20) e.vx = dir * (e.isBoss ? 0.5 : (0.8 + state.level * 0.03));
+          else if (dist < e.stopRange - 20) e.vx = -dir * 0.5;
+          else e.vx *= 0.8;
+          
+          if (e.shootCooldown <= 0 && dist < e.stopRange + 50) {
+            shootAtPlayer(e);
+            e.shootCooldown = e.shootCd;
+          }
+        }
+        
+        e.x += e.vx; e.vx *= 0.9;
+        e.vy += GRAVITY; e.y += e.vy;
+        if (e.y + e.h >= GROUND_Y()) { e.y = GROUND_Y() - e.h; e.vy = 0; }
+        if (e.hitFlash > 0) e.hitFlash--;
+        if (e.attackCooldown > 0) e.attackCooldown--;
+        if (e.shootCooldown > 0) e.shootCooldown--;
+        e.x = Math.max(0, Math.min(W - e.w, e.x));
+      });
+
+      for (let i = 0; i < enemies.length; i++) {
+        for (let j = i + 1; j < enemies.length; j++) {
+          const a = enemies[i], b = enemies[j];
+          const dx = (a.x + a.w/2) - (b.x + b.w/2);
+          const minDist = (a.w + b.w) / 2;
+          if (Math.abs(dx) < minDist) {
+            const push = (minDist - Math.abs(dx)) / 2;
+            const sign = Math.sign(dx) || 1;
+            a.x += sign * push;            b.x -= sign * push;
+          }
+        }
+      }
+      
+      helpers.forEach((h, idx) => {
+        const targetX = player.x - 35 - idx * 30;
+        if (h.x < targetX - 5) h.vx = h.speed;
+        else if (h.x > targetX + 5) h.vx = -h.speed;
+        else h.vx = 0;
+        if (Math.abs(h.vx) > 0.3) h.walkFrame = (h.walkFrame + 0.2) % 4;
+        else h.walkFrame = 0;
+        h.x += h.vx;
+        h.vy += GRAVITY; h.y += h.vy;
+        if (h.y + h.h >= GROUND_Y()) { h.y = GROUND_Y() - h.h; h.vy = 0; h.onGround = true; }
+        if (h.attackCooldown > 0) h.attackCooldown--;
+        if (h.hitFlash > 0) h.hitFlash--;
+        
+        if (h.attackCooldown <= 0) {
+          let target = null, minDist = h.range;
+          enemies.forEach(e => {
+            const d = Math.abs((e.x + e.w/2) - (h.x + h.w/2));
+            if (d < minDist) { minDist = d; target = e; }
+          });
+          if (target) {
+            if (h.type === 'warrior') {
+              damageEnemy(target, h.damage);
+              target.knockback = (target.x > h.x ? 1 : -1) * 5;
+            } else {
+              projectiles.push({
+                x: h.x + h.w/2, y: h.y + h.h/2,
+                vx: Math.sign(target.x - h.x) * 6, vy: 0,
+                damage: h.damage, color: h.color, life: 60,
+                fromPlayer: true, size: 4
+              });
+              if (h.type === 'mage') playSound('magic');
+            }
+            h.attackCooldown = 40;
+          }
+        }
+      });
+
+      projectiles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.fromPlayer) {
+          enemies.forEach(e => {
+            if (p.x > e.x && p.x < e.x + e.w && p.y > e.y && p.y < e.y + e.h) {
+              damageEnemy(e, p.damage);
+              e.knockback = Math.sign(p.vx) * 4;
+              p.life = 0;            }
+          });
+        } else {
+          if (p.x > player.x && p.x < player.x + player.w && p.y > player.y && p.y < player.y + player.h) {
+            damagePlayer(p.damage, p.x);
+            p.life = 0;
+          }
+          // Урон союзникам от снарядов врагов
+          helpers.forEach(h => {
+            if (p.x > h.x && p.x < h.x + h.w && p.y > h.y && p.y < h.y + h.h) {
+              h.hp -= p.damage;
+              h.hitFlash = 8;
+              p.life = 0;
+              if (h.hp <= 0) killHelper(h);
+            }
+          });
+        }
+      });
+      projectiles = projectiles.filter(p => p.life > 0 && p.x > -50 && p.x < W + 50);
+
+      coins.forEach(c => {
+        c.vy += 0.3; c.x += c.vx; c.y += c.vy; c.vx *= 0.95;
+        if (c.y > GROUND_Y() - 8) { c.y = GROUND_Y() - 8; c.vy *= -0.5; c.vx *= 0.7; }
+        c.life--;
+        const dx = (player.x + player.w/2) - c.x;
+        const dy = (player.y + player.h/2) - c.y;
+        if (Math.abs(dx) < 30 && Math.abs(dy) < 30) { 
+          state.coins += c.value; 
+          c.life = 0; 
+          playSound('coin');
+          updateHUD(); 
+        }
+      });
+      coins = coins.filter(c => c.life > 0);
+
+      particles.forEach(p => { 
+        p.x += p.vx; p.y += p.vy; p.life--; 
+        if (p.type === 'meteor') p.vy += 0.2; // гравитация для метеоров
+      });
+      particles = particles.filter(p => p.life > 0);
+
+      if (cameraShake > 0) cameraShake--;
+
+      if (levelKilled >= levelTotal) {
+        if (isBoss && bossDefeated) levelComplete();
+        else if (!isBoss) levelComplete();
+      }
+    }
+
+    function shootAtPlayer(e) {      const dx = (player.x + player.w/2) - (e.x + e.w/2);
+      const dy = (player.y + player.h/2) - (e.y + e.h/2);
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const vx = (dx / dist) * 5;
+      const vy = (dy / dist) * 5;
+      
+      let color, size;
+      if (e.type === 'archer') { color = '#8b4513'; size = 4; playSound('arrow'); }
+      else if (e.type === 'gunner') { color = '#2c3e50'; size = 3; playSound('gun'); }
+      else { color = '#9b59b6'; size = 6; playSound('magic'); }
+      
+      projectiles.push({
+        x: e.x + e.w/2, y: e.y + e.h/2,
+        vx, vy, damage: e.damage,
+        color, life: 120,
+        fromPlayer: false, size
+      });
+    }
+
+    function render() {
+      if (!ctx || W <= 0 || H <= 0) return;
+      
+      ctx.clearRect(0, 0, W, H);
+      ctx.save();
+      if (cameraShake > 0) ctx.translate((Math.random() - 0.5) * cameraShake, (Math.random() - 0.5) * cameraShake);
+
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+      skyGrad.addColorStop(0, '#4a6fa5');
+      skyGrad.addColorStop(1, '#87ceeb');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#555';
+      for (let i = 0; i < 4; i++) {
+        const tx = i * (W / 3) - 50;
+        ctx.fillRect(tx, GROUND_Y() - 180, 80, 180);
+        for (let j = 0; j < 4; j++) ctx.fillRect(tx + j * 20, GROUND_Y() - 200, 15, 20);
+        ctx.fillStyle = '#222';
+        ctx.fillRect(tx + 30, GROUND_Y() - 140, 20, 30);
+        ctx.fillRect(tx + 30, GROUND_Y() - 90, 20, 30);
+        ctx.fillStyle = '#555';
+      }
+      ctx.fillStyle = '#6a6a6a';
+      ctx.fillRect(0, GROUND_Y() - 80, W, 80);
+      ctx.fillStyle = '#7a7a7a';
+      for (let i = 0; i < W; i += 30) ctx.fillRect(i, GROUND_Y() - 100, 20, 20);
+      ctx.fillStyle = '#555';
+      for (let y = GROUND_Y() - 70; y < GROUND_Y(); y += 15) {
+        for (let x = (y % 30 === 0 ? 0 : 15); x < W; x += 30) ctx.fillRect(x, y, 28, 13);
+      }      ctx.fillStyle = '#c0392b';
+      for (let i = 0; i < 4; i++) {
+        const tx = i * (W / 3) - 50;
+        ctx.fillRect(tx + 35, GROUND_Y() - 230, 3, 30);
+        ctx.beginPath();
+        ctx.moveTo(tx + 38, GROUND_Y() - 230);
+        ctx.lineTo(tx + 55, GROUND_Y() - 220);
+        ctx.lineTo(tx + 38, GROUND_Y() - 210);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#2ecc40';
+      ctx.fillRect(0, GROUND_Y(), W, H - GROUND_Y());
+      ctx.fillStyle = '#27ae60';
+      ctx.fillRect(0, GROUND_Y(), W, 4);
+      ctx.fillStyle = '#229954';
+      for (let i = 0; i < W; i += 15) {
+        ctx.fillRect(i, GROUND_Y() + 8, 2, 4);
+        ctx.fillRect(i + 7, GROUND_Y() + 20, 2, 4);
+      }
+
+      coins.forEach(c => {
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(c.x - 5, c.y - 5, 10, 10);
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(c.x - 3, c.y - 3, 6, 6);
+      });
+
+      helpers.forEach(h => drawCharacterRealistic(h, h.color, false));
+
+      if (player) {
+        const flicker = player.invuln > 0 && Math.floor(player.invuln / 3) % 2;
+        if (!flicker) drawPlayerRealistic(player);
+      }
+
+      enemies.forEach(e => drawEnemyRealistic(e));
+
+      projectiles.forEach(p => {
+        ctx.fillStyle = p.color;
+        if (p.fromPlayer) {
+          ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+        } else {
+          if (p.color === '#9b59b6') {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+          } else if (p.color === '#8b4513') {
+            ctx.fillRect(p.x - 6, p.y - 1, 12, 2);            ctx.fillStyle = '#7f8c8d';
+            ctx.beginPath();
+            ctx.moveTo(p.x + 6, p.y);
+            ctx.lineTo(p.x + 3, p.y - 3);
+            ctx.lineTo(p.x + 3, p.y + 3);
+            ctx.fill();
+          } else {
+            ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+          }
+        }
+      });
+
+      particles.forEach(p => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        if (p.type === 'lightning') {
+          ctx.fillRect(p.x - p.size/2, p.y - p.size, p.size, p.size * 2);
+        } else if (p.type === 'meteor') {
+          ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+          ctx.fillStyle = '#f39c12';
+          ctx.fillRect(p.x - p.size/4, p.y - p.size, p.size/2, p.size/2);
+        } else {
+          ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+        }
+        ctx.globalAlpha = 1;
+      });
+
+      ctx.restore();
+    }
+
+    function drawCharacterRealistic(c, color, isEnemy) {
+      const x = c.x, y = c.y, w = c.w, h = c.h;
+      const flash = c.hitFlash > 0;
+      const walkOffset = Math.sin(c.walkFrame * Math.PI / 2) * 2;
+      
+      ctx.fillStyle = flash ? '#fff' : '#2c3e50';
+      const legW = w * 0.25;
+      const legH = h * 0.3;
+      const legY = y + h - legH;
+      ctx.fillRect(x + w * 0.2, legY + walkOffset, legW, legH - walkOffset);
+      ctx.fillRect(x + w * 0.55, legY - walkOffset, legW, legH + walkOffset);
+      
+      ctx.fillStyle = flash ? '#fff' : color;
+      const bodyH = h * 0.45;
+      const bodyY = y + h * 0.3;
+      ctx.fillRect(x + 2, bodyY, w - 4, bodyH);
+      
+      ctx.fillStyle = flash ? '#fff' : '#f5cba7';
+      const armW = w * 0.2;      const armH = h * 0.3;
+      const armY = bodyY + 5;
+      ctx.fillRect(x - armW + 2, armY - walkOffset, armW, armH);
+      ctx.fillRect(x + w - 2, armY + walkOffset, armW, armH);
+      
+      ctx.fillStyle = flash ? '#fff' : '#f5cba7';
+      const headW = w * 0.7;
+      const headH = h * 0.3;
+      const headX = x + (w - headW) / 2;
+      const headY = y;
+      ctx.fillRect(headX, headY, headW, headH);
+      
+      ctx.fillStyle = flash ? '#fff' : '#34495e';
+      ctx.fillRect(headX, headY, headW, headH * 0.3);
+      
+      ctx.fillStyle = '#000';
+      ctx.fillRect(headX + headW * 0.25, headY + headH * 0.5, 3, 3);
+      ctx.fillRect(headX + headW * 0.6, headY + headH * 0.5, 3, 3);
+      
+      // Убраны черные квадратики-хитбоксы по краям
+      
+      if (c.type === 'warrior') {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(x + w, armY + 5, 15, 3);
+      } else if (c.type === 'archer') {
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(x - 5, armY - 5, 3, 20);
+      } else if (c.type === 'mage') {
+        ctx.fillStyle = '#6c3483';
+        ctx.fillRect(x - 3, armY - 10, 3, 25);
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(x - 5, armY - 13, 7, 5);
+      }
+      
+      drawHPBar(x, y - 10, w, c.hp, c.maxHp, '#2ecc40');
+    }
+
+    function drawPlayerRealistic(p) {
+      const char = getCharacter();
+      const weapon = getCurrentWeapon();
+      const x = p.x, y = p.y, w = p.w, h = p.h;
+      const walkOffset = Math.sin(p.walkFrame * Math.PI / 2) * 2;
+      
+      ctx.fillStyle = '#2c3e50';
+      const legW = w * 0.25;
+      const legH = h * 0.3;
+      const legY = y + h - legH;
+      ctx.fillRect(x + w * 0.2, legY + walkOffset, legW, legH - walkOffset);
+      ctx.fillRect(x + w * 0.55, legY - walkOffset, legW, legH + walkOffset);
+            ctx.fillStyle = char.bodyColor;
+      const bodyH = h * 0.45;
+      const bodyY = y + h * 0.3;
+      ctx.fillRect(x + 2, bodyY, w - 4, bodyH);
+      
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(x + 2, bodyY + bodyH - 5, w - 4, 4);
+      
+      ctx.fillStyle = '#f5cba7';
+      const armW = w * 0.2;
+      const armH = h * 0.3;
+      const armY = bodyY + 5;
+      const backArmX = p.facing > 0 ? x - armW + 2 : x + w - 2;
+      const frontArmX = p.facing > 0 ? x + w - 2 : x - armW + 2;
+      ctx.fillRect(backArmX, armY - walkOffset, armW, armH);
+      ctx.fillRect(frontArmX, armY + walkOffset, armW, armH);
+      
+      ctx.fillStyle = '#f5cba7';
+      const headW = w * 0.7;
+      const headH = h * 0.3;
+      const headX = x + (w - headW) / 2;
+      const headY = y;
+      ctx.fillRect(headX, headY, headW, headH);
+      
+      ctx.fillStyle = char.color;
+      ctx.fillRect(headX - 2, headY - 3, headW + 4, 6);
+      ctx.fillRect(headX + 3, headY - 8, 4, 5);
+      ctx.fillRect(headX + headW/2 - 2, headY - 10, 4, 7);
+      ctx.fillRect(headX + headW - 7, headY - 8, 4, 5);
+      
+      ctx.fillStyle = '#000';
+      const eyeBaseX = p.facing > 0 ? headX + headW * 0.4 : headX + headW * 0.2;
+      ctx.fillRect(eyeBaseX, headY + headH * 0.5, 3, 3);
+      ctx.fillRect(eyeBaseX + 6, headY + headH * 0.5, 3, 3);
+      
+      ctx.fillRect(eyeBaseX + 2, headY + headH * 0.75, 5, 1);
+      
+      // Убраны черные квадратики-хитбоксы по краям
+      
+      if (p.attackTimer > 0) drawWeaponInHand(p, weapon);
+      else drawWeaponIdle(p, weapon);
+      
+      drawHPBar(x - 5, y - 15, w + 10, p.hp, p.maxHp, '#2ecc40', true);
+    }
+
+    function drawEnemyRealistic(e) {
+      const x = e.x, y = e.y, w = e.w, h = e.h;
+      const flash = e.hitFlash > 0;
+      const walkOffset = Math.sin(e.walkFrame * Math.PI / 2) * 2;
+            ctx.fillStyle = flash ? '#fff' : '#1a1a1a';
+      const legW = w * 0.25;
+      const legH = h * 0.3;
+      const legY = y + h - legH;
+      ctx.fillRect(x + w * 0.2, legY + walkOffset, legW, legH - walkOffset);
+      ctx.fillRect(x + w * 0.55, legY - walkOffset, legW, legH + walkOffset);
+      
+      ctx.fillStyle = flash ? '#fff' : e.color;
+      const bodyH = h * 0.45;
+      const bodyY = y + h * 0.3;
+      ctx.fillRect(x + 2, bodyY, w - 4, bodyH);
+      
+      if (e.type === 'warrior') {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(x + 2, bodyY, w - 4, 4);
+      } else if (e.type === 'archer') {
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(x + 4, bodyY + 5, w - 8, 3);
+      } else if (e.type === 'gunner') {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(x + 2, bodyY, w - 4, 4);
+      } else if (e.type === 'mage') {
+        ctx.fillStyle = '#6c3483';
+        ctx.fillRect(x, bodyY, w, bodyH);
+      }
+      
+      ctx.fillStyle = flash ? '#fff' : (e.type === 'mage' ? '#6c3483' : '#d5b5a0');
+      const armW = w * 0.2;
+      const armH = h * 0.3;
+      const armY = bodyY + 5;
+      ctx.fillRect(x - armW + 2, armY - walkOffset, armW, armH);
+      ctx.fillRect(x + w - 2, armY + walkOffset, armW, armH);
+      
+      ctx.fillStyle = flash ? '#fff' : (e.type === 'mage' ? '#d5b5a0' : '#c9a88a');
+      const headW = w * 0.7;
+      const headH = h * 0.3;
+      const headX = x + (w - headW) / 2;
+      const headY = y;
+      ctx.fillRect(headX, headY, headW, headH);
+      
+      if (e.type === 'warrior') {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(headX + headW * 0.2, headY + headH * 0.4, headW * 0.2, headH * 0.2);
+        ctx.fillRect(headX + headW * 0.6, headY + headH * 0.4, headW * 0.2, headH * 0.2);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(headX + headW * 0.25, headY + headH * 0.45, 2, 2);
+        ctx.fillRect(headX + headW * 0.65, headY + headH * 0.45, 2, 2);
+      } else if (e.type === 'archer') {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(headX + headW * 0.15, headY + headH * 0.5, headW * 0.25, headH * 0.1);        ctx.fillRect(headX + headW * 0.6, headY + headH * 0.5, headW * 0.25, headH * 0.1);
+      } else if (e.type === 'gunner') {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(headX + headW * 0.1, headY + headH * 0.4, headW * 0.35, headH * 0.2);
+        ctx.fillRect(headX + headW * 0.55, headY + headH * 0.4, headW * 0.35, headH * 0.2);
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(headX + headW * 0.13, headY + headH * 0.45, headW * 0.29, headH * 0.1);
+        ctx.fillRect(headX + headW * 0.58, headY + headH * 0.45, headW * 0.29, headH * 0.1);
+      } else if (e.type === 'mage') {
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(headX + headW * 0.2, headY + headH * 0.4, headW * 0.2, headH * 0.2);
+        ctx.fillRect(headX + headW * 0.6, headY + headH * 0.4, headW * 0.2, headH * 0.2);
+        ctx.fillStyle = flash ? '#fff' : '#4a235a';
+        ctx.fillRect(headX - 3, headY - 4, headW + 6, 8);
+        ctx.fillRect(headX, headY - 8, headW, 6);
+      }
+      
+      if (e.isBoss) {
+        ctx.fillStyle = '#fff';
+        for (let i = 0; i < 4; i++) ctx.fillRect(x + 15 + i * 12, y + h * 0.75, 5, 6);
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(headX - 5, headY - 10, headW + 10, 8);
+        ctx.fillRect(headX, headY - 16, 4, 6);
+        ctx.fillRect(headX + headW/2 - 2, headY - 18, 4, 8);
+        ctx.fillRect(headX + headW - 4, headY - 16, 4, 6);
+      }
+      
+      if (e.type !== 'warrior' && !e.isBoss) {
+        const handX = x - 8;
+        const handY = armY + 5;
+        if (e.type === 'archer') {
+          ctx.fillStyle = '#8b4513';
+          ctx.fillRect(handX, handY - 10, 3, 20);
+          ctx.strokeStyle = '#bdc3c7';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(handX + 1, handY - 10);
+          ctx.lineTo(handX - 4, handY);
+          ctx.lineTo(handX + 1, handY + 10);
+          ctx.stroke();
+        } else if (e.type === 'gunner') {
+          ctx.fillStyle = '#2c3e50';
+          ctx.fillRect(handX - 8, handY, 12, 5);
+          ctx.fillStyle = '#000';
+          ctx.fillRect(handX - 10, handY + 1, 2, 3);
+        } else if (e.type === 'mage') {
+          ctx.fillStyle = '#6c3483';
+          ctx.fillRect(handX, handY - 15, 3, 25);
+          ctx.fillStyle = '#f39c12';
+          ctx.fillRect(handX - 2, handY - 18, 7, 5);        }
+      } else if (e.type === 'warrior' && !e.isBoss) {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(x + w, armY + 3, 15, 3);
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(x + w - 2, armY, 5, 9);
+      }
+      
+      // Убраны черные квадратики-хитбоксы по краям
+      
+      drawHPBar(x, y - (e.isBoss ? 22 : 10), w, e.hp, e.maxHp, '#e74c3c');
+    }
+
+    function drawWeaponIdle(p, weapon) {
+      const handX = p.facing > 0 ? p.x + p.w - 3 : p.x - 8;
+      const handY = p.y + 25;
+      
+      if (weapon.type === 'melee') {
+        ctx.fillStyle = weapon.color2;
+        ctx.fillRect(handX, handY, 6, 18);
+        ctx.fillStyle = weapon.color;
+        ctx.fillRect(handX, handY, 6, 14);
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(handX - 1, handY + 14, 8, 4);
+      } else {
+        ctx.fillStyle = weapon.color;
+        ctx.fillRect(handX, handY + 3, 14, 6);
+        ctx.fillStyle = weapon.color2;
+        ctx.fillRect(handX + (p.facing > 0 ? 10 : -4), handY + 1, 4, 4);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(handX + (p.facing > 0 ? 13 : -3), handY + 4, 2, 3);
+      }
+    }
+    function drawWeaponInHand(p, weapon) {
+      const handX = p.facing > 0 ? p.x + p.w : p.x;
+      const handY = p.y + 20;
+      
+      if (weapon.type === 'melee') {
+        const swordLen = 20 + (weapon.range - 45) * 0.3;
+        const sx = p.facing > 0 ? handX : handX - swordLen;
+        ctx.fillStyle = weapon.color;
+        ctx.fillRect(sx, handY, swordLen, 6);
+        ctx.fillStyle = weapon.color2;
+        ctx.fillRect(sx, handY, swordLen, 2);
+        ctx.fillStyle = weapon.color2;
+        if (p.facing > 0) {
+          ctx.beginPath();
+          ctx.moveTo(sx + swordLen, handY);
+          ctx.lineTo(sx + swordLen + 6, handY + 3);
+          ctx.lineTo(sx + swordLen, handY + 6);          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(sx, handY);
+          ctx.lineTo(sx - 6, handY + 3);
+          ctx.lineTo(sx, handY + 6);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#2c3e50';
+        const hx = p.facing > 0 ? handX - 4 : handX + swordLen - 4;
+        ctx.fillRect(hx, handY - 2, 8, 10);
+        
+        if (weapon.name.includes('ОГНЕННЫЙ')) {
+          ctx.fillStyle = '#f39c12';
+          for (let i = 0; i < 3; i++) ctx.fillRect(sx + i * 8 + Math.random() * 4, handY - 4 - Math.random() * 4, 3, 3);
+        }
+        if (weapon.name.includes('ГРОМОВОЙ')) {
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(sx + 5, handY - 2, 2, 2);
+          ctx.fillRect(sx + 15, handY + 6, 2, 2);
+        }
+      } else {
+        const gunLen = weapon.name.includes('СНАЙПЕРК') ? 28 : (weapon.name.includes('ДРОБОВИК') ? 22 : (weapon.name.includes('АВТОМАТ') ? 24 : 18));
+        const gx = p.facing > 0 ? handX : handX - gunLen;
+        ctx.fillStyle = weapon.color;
+        ctx.fillRect(gx, handY + 2, gunLen, 7);
+        ctx.fillStyle = weapon.color2;
+        ctx.fillRect(gx, handY + 2, gunLen, 2);
+        ctx.fillStyle = '#000';
+        const muzzleX = p.facing > 0 ? gx + gunLen - 3 : gx;
+        ctx.fillRect(muzzleX, handY + 3, 3, 4);
+        ctx.fillStyle = '#f39c12';
+        const flashX = p.facing > 0 ? gx + gunLen : gx - 8;
+        ctx.fillRect(flashX, handY, 8, 9);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(flashX + 2, handY + 2, 4, 5);
+        ctx.fillStyle = '#8b4513';
+        const stockX = p.facing > 0 ? gx - 6 : gx + gunLen;
+        ctx.fillRect(stockX, handY + 3, 6, 5);
+      }
+    }
+
+    function drawHPBar(x, y, w, hp, maxHp, color, big = false) {
+      const h = big ? 6 : 4;
+      const pct = Math.max(0, hp / maxHp);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+      ctx.fillStyle = '#333';
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = color;      ctx.fillRect(x, y, w * pct, h);
+    }
+
+    function updateHUD() {
+      document.getElementById('level-display').textContent = 'УРОВЕНЬ ' + state.level + (isBoss ? ' ⚠️ БОСС' : '');
+      document.getElementById('coins-display').textContent = '💰 ' + state.coins;
+      const pct = levelTotal > 0 ? (levelKilled / levelTotal) * 100 : 0;
+      document.getElementById('level-progress').style.width = pct + '%';
+      if (state.level >= 10) document.getElementById('btn-gang-menu').style.display = '';
+      if (state.ultraUnlocked) {
+        document.getElementById('btn-ultra').style.display = '';
+        updateUltraBtn();
+      }
+      save();
+    }
+    function updateUltraBtn() {
+      const btn = document.getElementById('btn-ultra');
+      if (!btn) return;
+      if (state.ultraReady) { btn.classList.add('ready'); btn.disabled = false; }
+      else { btn.classList.remove('ready'); btn.disabled = true; }
+    }
+
+    function levelComplete() {
+      gameRunning = false;
+      if (isBoss) {
+        showBossDialogue('victory');
+      } else {
+        state.level++;
+        checkUnlocks();
+        save();
+        document.getElementById('level-complete-screen').classList.add('active');
+      }
+    }
+
+    function checkUnlocks() {
+      if (state.level >= 30 && !state.ultraUnlocked) state.ultraUnlocked = true;
+    }
+    function gameOver() {
+      gameRunning = false;
+      document.getElementById('death-screen').classList.add('active');
+    }
+
+    const bossDialogues = {
+      10: { pre: ['Ха-ха... ты дошёл до меня.', 'Я — первый босс. Посмотрим, кто сильнее!'], post: ['Ооо... нет! Как ты смог победить меня?!', 'Ладно... иди дальше.'] },
+      20: { pre: ['Ты думаешь, что сильный?', 'Я — тень. Меня нельзя победить.'], post: ['Невозможно... моя тень рассеялась...'] },
+      30: { pre: ['У тебя появилась ультра?', 'Это не спасёт тебя от меня!'], post: ['Моя мощь... разбита...'] },
+      40: { pre: ['Я — огонь, что сжигает всё.'], post: ['Мой огонь... погас...'] },
+      50: { pre: ['Половина пути пройдена.', 'Но я — стена, которую не пройти.'], post: ['Ты... пробил стену...'] },
+      60: { pre: ['Я — лёд. Я — смерть.'], post: ['Тепло... побеждает холод...'] },
+      70: { pre: ['Моя банда ждёт тебя.', 'Но сначала — я.'], post: ['Даже я... пал...'] },      80: { pre: ['Почти у цели.'], post: ['Ты прошёл...'] },
+      90: { pre: ['Я — кошмар.'], post: ['Кошмар... окончен...'] },
+      100: { pre: ['ТЫ ДОШЁЛ ДО МЕНЯ.', 'Я — ВЕРХОВНЫЙ БОСС.'], post: ['НЕВОЗМОЖНО... Я ПОБЕЖДЁН.', 'ТЫ — НАСТОЯЩИЙ ГЕРОЙ!'] }
+    };
+
+    function showBossDialogue(type) {
+      const d = bossDialogues[state.level] || bossDialogues[10];
+      const texts = type === 'pre' ? d.pre : d.post;
+      document.getElementById('boss-dialogue-title').textContent = type === 'pre' ? '⚠️ БОСС УРОВНЯ ' + state.level : '🏆 ПОБЕДА!';
+      const textEl = document.getElementById('boss-dialogue-text');
+      textEl.textContent = '';
+      document.getElementById('boss-dialogue-screen').classList.add('active');
+      let fullText = texts.join('\n\n');
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < fullText.length) { textEl.textContent += fullText[i]; i++; }
+        else clearInterval(interval);
+      }, 40);
+      document.getElementById('btn-boss-continue').onclick = () => {
+        document.getElementById('boss-dialogue-screen').classList.remove('active');
+        if (type === 'pre') startLevel();
+        else {
+          state.level++;
+          checkUnlocks(); save();
+          if (state.level > 100) {
+            document.getElementById('victory-text').textContent = 'ТЫ ПРОШЁЛ ВСЕ 100 УРОВНЕЙ! ТЫ — ЛЕГЕНДА!';
+            document.getElementById('victory-screen').classList.add('active');
+            document.getElementById('btn-victory-continue').onclick = () => {
+              document.getElementById('victory-screen').classList.remove('active');
+              showMenu();
+            };
+          } else startLevel();
+        }
+      };
+    }
+
+    function showMenu() {
+      gameRunning = false;
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      document.getElementById('menu-screen').classList.add('active');
+      if (state.level >= 10) document.getElementById('btn-gang-menu').style.display = '';
+    }
+    function togglePause() {
+      if (!gameRunning) return;
+      gamePaused = !gamePaused;
+      if (gamePaused) { state.returnTo = 'pause'; document.getElementById('pause-screen').classList.add('active'); }
+      else document.getElementById('pause-screen').classList.remove('active');
+    }
+
+    function openCharacters() {      state.returnTo = getCurrentScreen();
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      document.getElementById('characters-screen').classList.add('active');
+      document.getElementById('char-coins').textContent = '💰 ' + state.coins + ' | Текущий: ' + getCharacter().name;
+      const grid = document.getElementById('char-items');
+      grid.innerHTML = '';
+      characters.forEach(c => {
+        const owned = state.unlockedChars.includes(c.id);
+        const selected = state.characterId === c.id;
+        const canBuy = !owned && state.coins >= c.cost;
+        const div = document.createElement('div');
+        div.className = 'shop-item' + (selected ? ' selected' : '');
+        div.innerHTML = `
+          <h3>${c.name}</h3>
+          <canvas class="char-preview" width="60" height="80"></canvas>
+          <p>${c.desc}</p>
+          <p class="bonus">${c.bonus}</p>
+          <p class="price">${selected ? '✅ ВЫБРАН' : (owned ? '✅ ОТКРЫТ' : '💰 ' + c.cost)}</p>
+          <button class="pixel-btn small" data-id="${c.id}" data-action="${selected ? '' : (owned ? 'select' : 'buy')}" ${(!owned && !canBuy) || selected ? 'disabled' : ''}>
+            ${selected ? 'В ИГРЕ' : (owned ? 'ВЫБРАТЬ' : 'КУПИТЬ')}
+          </button>
+        `;
+        const canvas = div.querySelector('canvas');
+        const pctx = canvas.getContext('2d');
+        drawCharPreview(pctx, c, 60, 80);
+        
+        div.querySelector('button').onclick = () => {
+          const action = div.querySelector('button').dataset.action;
+          if (action === 'select') {
+            state.characterId = c.id;
+            playSound('buy');
+            save(); openCharacters();
+          } else if (action === 'buy') {
+            if (state.coins >= c.cost) {
+              state.coins -= c.cost;
+              state.unlockedChars.push(c.id);
+              state.characterId = c.id;
+              playSound('buy');
+              save(); openCharacters();
+            }
+          }
+        };
+        grid.appendChild(div);
+      });
+    }
+
+    function drawCharPreview(pctx, c, w, h) {
+      pctx.clearRect(0, 0, w, h);
+      pctx.fillStyle = '#2c3e50';
+      pctx.fillRect(w * 0.25, h * 0.75, w * 0.2, h * 0.25);      pctx.fillRect(w * 0.55, h * 0.75, w * 0.2, h * 0.25);
+      pctx.fillStyle = c.bodyColor;
+      pctx.fillRect(w * 0.15, h * 0.4, w * 0.7, h * 0.35);
+      pctx.fillStyle = '#8b4513';
+      pctx.fillRect(w * 0.15, h * 0.7, w * 0.7, h * 0.05);
+      pctx.fillStyle = '#f5cba7';
+      pctx.fillRect(w * 0.05, h * 0.45, w * 0.15, h * 0.25);
+      pctx.fillRect(w * 0.8, h * 0.45, w * 0.15, h * 0.25);
+      pctx.fillStyle = '#f5cba7';
+      pctx.fillRect(w * 0.25, h * 0.1, w * 0.5, h * 0.3);
+      pctx.fillStyle = c.color;
+      pctx.fillRect(w * 0.2, h * 0.05, w * 0.6, h * 0.08);
+      pctx.fillRect(w * 0.3, h * 0, w * 0.1, h * 0.07);
+      pctx.fillRect(w * 0.45, h * 0, w * 0.1, h * 0.07);
+      pctx.fillRect(w * 0.6, h * 0, w * 0.1, h * 0.07);
+      pctx.fillStyle = '#000';
+      pctx.fillRect(w * 0.35, h * 0.22, 3, 3);
+      pctx.fillRect(w * 0.55, h * 0.22, 3, 3);
+    }
+
+    function openShop() {
+      state.returnTo = getCurrentScreen();
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      document.getElementById('shop-screen').classList.add('active');
+      document.getElementById('shop-coins').textContent = '💰 ' + state.coins;
+      const grid = document.getElementById('shop-items');
+      grid.innerHTML = '';
+      
+      weapons.forEach((w, i) => {
+        const owned = state.unlockedWeapons.includes(i);
+        const current = state.weaponIndex === i;
+        const canBuy = !owned && state.coins >= w.cost && (i === 0 || state.unlockedWeapons.includes(i - 1));
+        
+        const div = document.createElement('div');
+        div.className = 'shop-item' + (current ? ' selected' : '');
+        
+        const typeTag = w.type === 'melee' ? '<span class="type-tag melee">БЛИЖНИЙ</span>' : '<span class="type-tag ranged">ДАЛЬНИЙ</span>';
+        const statsText = w.type === 'melee' ? `Урон: ${w.dmg} | Дист: ${w.range}` : `Урон: ${w.dmg}×${w.projCount} | Дист: ${w.range}`;
+        
+        let btnText = 'КУПИТЬ';
+        let btnDisabled = !canBuy;
+        
+        if (owned) {
+          if (current) {
+            btnText = '✅ ЭКИПИРОВАНО';
+            btnDisabled = true;
+          } else {
+            btnText = 'ЭКИПИРОВАТЬ';
+            btnDisabled = false;
+          }        } else if (i === 0) {
+          btnText = '✅ ЭКИПИРОВАНО';
+          btnDisabled = true;
+        }
+
+        div.innerHTML = `
+          <h3>${w.name}</h3>
+          ${typeTag}
+          <p>${w.desc}</p>
+          <p>${statsText}</p>
+          <p class="price">${owned ? (current ? '✅ ЭКИПИРОВАНО' : '✅ КУПЛЕН') : '💰 ' + w.cost}</p>
+          <button class="pixel-btn small" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
+        `;
+        
+        div.querySelector('button').onclick = () => {
+          if (canBuy) {
+            state.coins -= w.cost;
+            state.unlockedWeapons.push(i);
+            state.weaponIndex = i;
+            playSound('buy');
+            save(); 
+            openShop();
+          } else if (owned && !current) {
+            state.weaponIndex = i;
+            playSound('buy');
+            save();
+            openShop();
+          }
+        };
+        grid.appendChild(div);
+      });
+    }
+
+    const upgrades = [
+      { id: 'hp', name: '❤️ ЗДОРОВЬЕ', desc: '+25 HP', baseCost: 40, getLvl: () => state.hpLvl, max: 20, apply: () => { state.hpLvl++; state.maxHp += 25; } },
+      { id: 'dmg', name: '💥 УРОН', desc: '+3 к урону', baseCost: 60, getLvl: () => state.dmgLvl, max: 20, apply: () => { state.dmgLvl++; state.damage += 3; } },
+      { id: 'speed', name: '👟 СКОРОСТЬ', desc: '+0.5 скорости', baseCost: 50, getLvl: () => state.speedLvl, max: 10, apply: () => { state.speedLvl++; state.speed += 0.5; } }
+    ];
+    function openUpgrades() {
+      state.returnTo = getCurrentScreen();
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      document.getElementById('upgrades-screen').classList.add('active');
+      document.getElementById('upgrades-coins').textContent = '💰 ' + state.coins;
+      const grid = document.getElementById('upgrades-items');
+      grid.innerHTML = '';
+      upgrades.forEach(u => {
+        const lvl = u.getLvl();
+        const cost = u.baseCost + lvl * 25;
+        const maxed = lvl >= u.max;
+        const div = document.createElement('div');        div.className = 'shop-item';
+        div.innerHTML = `
+          <h3>${u.name}</h3>
+          <p>${u.desc}</p>
+          <p>Уровень: ${lvl}/${u.max}</p>
+          <p class="price">${maxed ? 'МАКС' : '💰 ' + cost}</p>
+          <button class="pixel-btn small" ${maxed || state.coins < cost ? 'disabled' : ''}>КУПИТЬ</button>
+        `;
+        div.querySelector('button').onclick = () => {
+          if (state.coins >= cost && !maxed) {
+            state.coins -= cost;
+            u.apply();
+            playSound('buy');
+            save(); openUpgrades();
+          }
+        };
+        grid.appendChild(div);
+      });
+    }
+
+    const ultras = [
+      { lvl: 1, name: '⚡ УДАР МОЛНИИ', desc: 'Урон x3 всем врагам', cost: 0 },
+      { lvl: 2, name: '⚡⚡ ДВОЙНАЯ МОЛНИЯ', desc: 'Урон x4', cost: 500 },
+      { lvl: 3, name: '⚡⚡⚡ ТРОЙНАЯ МОЛНИЯ', desc: 'Урон x5', cost: 1500 },
+      { lvl: 4, name: '🌪️ УРАГАН', desc: 'Урон x7', cost: 3000 },
+      { lvl: 5, name: '☄️ МЕТЕОР', desc: 'Урон x10', cost: 6000 }
+    ];
+    
+    function openUltra() {
+      if (state.level < 30) {
+        document.getElementById('ultra-warning-level').textContent = 'Ваш текущий уровень: ' + state.level + ' / 30';
+        document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+        document.getElementById('ultra-warning-screen').classList.add('active');
+        return;
+      }
+      if (!state.ultraUnlocked) {
+        state.ultraUnlocked = true;
+        save();
+      }
+      state.returnTo = getCurrentScreen();
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      document.getElementById('ultra-screen').classList.add('active');
+      document.getElementById('ultra-coins').textContent = '💰 ' + state.coins;
+      const grid = document.getElementById('ultra-items');
+      grid.innerHTML = '';
+      ultras.forEach(u => {
+        const owned = state.ultraLvl >= u.lvl;
+        const current = state.ultraLvl === u.lvl;
+        const canBuy = !owned && state.coins >= u.cost && state.ultraLvl === u.lvl - 1;
+        const div = document.createElement('div');        div.className = 'shop-item';
+        div.innerHTML = `
+          <h3>${u.name}</h3>
+          <p>${u.desc}</p>
+          <p class="price">${owned ? (current ? '✅ АКТИВНА' : '✅ КУПЛЕНА') : '💰 ' + u.cost}</p>
+          <button class="pixel-btn small" ${!canBuy ? 'disabled' : ''}>${owned ? (current ? 'АКТИВНА' : 'КУПЛЕНА') : 'КУПИТЬ'}</button>
+        `;
+        div.querySelector('button').onclick = () => {
+          if (canBuy) {
+            state.coins -= u.cost;
+            state.ultraLvl = u.lvl;
+            playSound('buy');
+            save(); openUltra();
+          }
+        };
+        grid.appendChild(div);
+      });
+    }
+
+    const gangTypes = [
+      { type: 'warrior', name: '⚔️ ВОР', desc: 'Ближний бой, много HP', cost: 200 },
+      { type: 'archer', name: '🏹 ЛУЧНИК', desc: 'Дальний бой, быстро стреляет', cost: 300 },
+      { type: 'mage', name: '🔮 МАГ', desc: 'Очень сильный урон', cost: 500 }
+    ];
+    let gangTab = 'recruit';
+    let pendingDeleteIndex = -1;
+
+    function openGang() {
+      if (state.level < 10) { alert('Откроется на 10 уровне!'); return; }
+      state.returnTo = getCurrentScreen();
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      document.getElementById('gang-screen').classList.add('active');
+      renderGang();
+    }
+    function renderGang() {
+      document.getElementById('gang-coins').textContent = '💰 ' + state.coins + ' | Помощников: ' + state.gang.length + '/3';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === gangTab));
+      const grid = document.getElementById('gang-items');
+      grid.innerHTML = '';
+      if (gangTab === 'recruit') {
+        gangTypes.forEach(g => {
+          const owned = state.gang.filter(x => x.type === g.type).length;
+          const div = document.createElement('div');
+          div.className = 'shop-item';
+          div.innerHTML = `
+            <h3>${g.name}</h3>
+            <p>${g.desc}</p>
+            <p>Нанято: ${owned}</p>
+            <p class="price">💰 ${g.cost}</p>
+            <button class="pixel-btn small" ${state.coins < g.cost || state.gang.length >= 3 ? 'disabled' : ''}>НАНЯТЬ</button>          `;
+          div.querySelector('button').onclick = () => {
+            if (state.coins >= g.cost && state.gang.length < 3) {
+              state.coins -= g.cost;
+              state.gang.push({ type: g.type, level: 1 });
+              playSound('buy');
+              save(); renderGang();
+            }
+          };
+          grid.appendChild(div);
+        });
+      } else {
+        if (state.gang.length === 0) {
+          grid.innerHTML = '<p style="text-align:center;font-size:10px;">Никого не нанято</p>';
+          return;
+        }
+        state.gang.forEach((g, i) => {
+          const info = gangTypes.find(t => t.type === g.type);
+          const cost = 150 + g.level * 100;
+          const div = document.createElement('div');
+          div.className = 'shop-item';
+          div.innerHTML = `
+            <h3>${info.name}</h3>
+            <p>Уровень: ${g.level}</p>
+            <p class="price">💰 ${cost}</p>
+            <div style="display:flex; gap:5px; justify-content:center; margin-top:8px;">
+              <button class="pixel-btn small upgrade-gang-btn" style="min-width:80px; font-size:8px;" ${state.coins < cost ? 'disabled' : ''}>УЛУЧШИТЬ</button>
+              <button class="pixel-btn small delete-gang-btn" style="min-width:40px; padding:8px 4px; background:#e74c3c; color:#fff; border-color:#c0392b;" data-index="${i}">🗑️</button>
+            </div>
+          `;
+          div.querySelector('.upgrade-gang-btn').onclick = () => {
+            if (state.coins >= cost) {
+              state.coins -= cost;
+              g.level++;
+              playSound('buy');
+              save(); renderGang();
+            }
+          };
+          div.querySelector('.delete-gang-btn').onclick = () => {
+            pendingDeleteIndex = i;
+            document.getElementById('delete-gang-screen').classList.add('active');
+          };
+          grid.appendChild(div);
+        });
+      }
+    }
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.addEventListener('click', () => { gangTab = b.dataset.tab; renderGang(); });
+    });
+    function getCurrentScreen() {
+      if (document.getElementById('menu-screen').classList.contains('active')) return 'menu';
+      if (document.getElementById('pause-screen').classList.contains('active')) return 'pause';
+      return 'menu';
+    }
+    
+    function returnBack() {
+      document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+      if (gamePaused) {
+        document.getElementById('pause-screen').classList.add('active');
+      } else if (gameRunning) {
+        showMenu();
+      } else {
+        showMenu();
+      }
+    }
+
+    document.getElementById('btn-start').onclick = () => {
+      document.getElementById('menu-screen').classList.remove('active');
+      setTimeout(() => {
+        resize();
+        if (state.level % 10 === 0) showBossDialogue('pre');
+        else startLevel();
+      }, 100);
+    };
+    document.getElementById('btn-characters-menu').onclick = openCharacters;
+    document.getElementById('btn-shop-menu').onclick = openShop;
+    document.getElementById('btn-upgrades-menu').onclick = openUpgrades;
+    document.getElementById('btn-ultra-menu').onclick = openUltra;
+    document.getElementById('btn-gang-menu').onclick = openGang;
+    document.getElementById('btn-reset').onclick = resetGame;
+    document.getElementById('btn-resume').onclick = () => { gamePaused = false; document.getElementById('pause-screen').classList.remove('active'); };
+    document.getElementById('btn-shop-pause').onclick = openShop;
+    document.getElementById('btn-upgrades-pause').onclick = openUpgrades;
+    document.getElementById('btn-main-menu').onclick = showMenu;
+    document.getElementById('btn-characters-close').onclick = returnBack;
+    document.getElementById('btn-shop-close').onclick = returnBack;
+    document.getElementById('btn-upgrades-close').onclick = returnBack;
+    document.getElementById('btn-ultra-close').onclick = returnBack;
+    document.getElementById('btn-gang-close').onclick = returnBack;
+    document.getElementById('btn-retry').onclick = () => {
+      document.getElementById('death-screen').classList.remove('active');
+      player.hp = player.maxHp;
+      setTimeout(() => { resize(); startLevel(); }, 100);
+    };
+    document.getElementById('btn-death-menu').onclick = () => {
+      document.getElementById('death-screen').classList.remove('active');
+      showMenu();
+    };
+    document.getElementById('btn-lc-continue').onclick = () => {
+      document.getElementById('level-complete-screen').classList.remove('active');
+      setTimeout(() => { resize(); startLevel(); }, 100);
+    };
+    document.getElementById('btn-lc-menu').onclick = () => {
+      document.getElementById('level-complete-screen').classList.remove('active');
+      showMenu();
+    };
+    document.getElementById('btn-ultra-warning-close').onclick = () => {
+      document.getElementById('ultra-warning-screen').classList.remove('active');
+      showMenu();
+    };
+    document.getElementById('btn-fullscreen').onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(e => console.log(e));
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    };
+    
+    document.getElementById('btn-confirm-delete').onclick = () => {
+      if (pendingDeleteIndex >= 0) {
+        state.gang.splice(pendingDeleteIndex, 1);
+        save();
+        pendingDeleteIndex = -1;
+        document.getElementById('delete-gang-screen').classList.remove('active');
+        renderGang();
+      }
+    };
+    document.getElementById('btn-cancel-delete').onclick = () => {
+      pendingDeleteIndex = -1;
+      document.getElementById('delete-gang-screen').classList.remove('active');
+    };
+
+    function loop() { 
+      try { update(); render(); } catch(e) { console.error('Loop error:', e); }
+      requestAnimationFrame(loop); 
+    }
+
+    load();
+    checkUnlocks();
+    updateHUD();
+    loop();
+  } catch(e) {
+    console.error('Init error:', e);
+    alert('Ошибка инициализации: ' + e.message);
+  }
+})();</script>
+</body>
+</html>
