@@ -47,8 +47,7 @@
   
   .tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 15px; max-width: 600px; }
   .tab-btn { font-family: 'Press Start 2P', monospace; font-size: 9px; padding: 8px 12px; background: #fff; border: 2px solid #000; cursor: pointer; transition: transform 0.08s; }
-  .tab-btn.active { background: #000; color: #fff; }  .tab-btn:active { transform: translate(1px, 1px); }  
-  .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; max-width: 600px; width: 100%; }
+  .tab-btn.active { background: #000; color: #fff; }  .tab-btn:active { transform: translate(1px, 1px); }    .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; max-width: 600px; width: 100%; }
   .shop-item { background: #fff; border: 3px solid #000; box-shadow: 3px 3px 0 0 #000; padding: 12px; text-align: center; }
   .shop-item.selected { border-color: #2ecc40; box-shadow: 3px 3px 0 0 #2ecc40; background: #f0fff0; }
   .shop-item h3 { font-size: 10px; margin-bottom: 8px; }
@@ -97,8 +96,7 @@
       <button class="ctrl-btn" id="btn-left"><svg viewBox="0 0 24 24" fill="#000"><path d="M15 18l-6-6 6-6"/></svg></button>
       <button class="ctrl-btn" id="btn-up"><svg viewBox="0 0 24 24" fill="#000"><path d="M18 15l-6-6-6 6"/></svg></button>
       <button class="ctrl-btn" id="btn-right"><svg viewBox="0 0 24 24" fill="#000"><path d="M9 18l6-6-6-6"/></svg></button>    </div>
-    <div class="ctrl-group">
-      <button class="ctrl-btn ultra" id="btn-ultra" style="display:none;"><svg viewBox="0 0 24 24" fill="#000"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>
+    <div class="ctrl-group">      <button class="ctrl-btn ultra" id="btn-ultra" style="display:none;"><svg viewBox="0 0 24 24" fill="#000"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>
       <button class="ctrl-btn attack" id="btn-attack">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges" fill="#000">
     <g transform="rotate(-45 16 16)">
@@ -147,8 +145,7 @@
 
   <div id="characters-screen" class="overlay">
     <h1>👤 ПЕРСОНАЖИ</h1>
-    <div class="stats" id="char-coins">💰 0</div>
-    <div class="shop-grid" id="char-items"></div>
+    <div class="stats" id="char-coins">💰 0</div>    <div class="shop-grid" id="char-items"></div>
     <button class="pixel-btn" id="btn-characters-close" style="margin-top:20px;">← НАЗАД</button>
   </div>
 
@@ -197,8 +194,7 @@
   </div>
 
   <div id="victory-screen" class="overlay">
-    <h1>🏆 ПОБЕДА!</h1>
-    <div id="victory-text" style="font-size:10px; line-height:1.8; margin:20px; max-width:500px; text-align:center;"></div>
+    <h1>🏆 ПОБЕДА!</h1>    <div id="victory-text" style="font-size:10px; line-height:1.8; margin:20px; max-width:500px; text-align:center;"></div>
     <button class="pixel-btn" id="btn-victory-continue">ПРОДОЛЖИТЬ</button>
   </div>
 
@@ -218,7 +214,7 @@
 
   <div id="delete-gang-screen" class="overlay">
     <h1>🗑️ УДАЛИТЬ?</h1>
-    <p style="font-size:10px; margin:20px; text-align:center; line-height: 1.8;">Вы уверены, что хотите удалить этого союзника?<br>Это действие необратимо.</p>
+    <p style="font-size:10px; margin:20px; text-align:center; line-height: 1.8;">Вы уверены, что хотите удалить этого союзника из банды?<br>Это действие необратимо.</p>
     <div class="menu-btns">
       <button class="pixel-btn small" id="btn-confirm-delete" style="background:#e74c3c; color:#fff; border-color:#c0392b;">ДА, УДАЛИТЬ</button>
       <button class="pixel-btn small" id="btn-cancel-delete">ОТМЕНА</button>
@@ -247,8 +243,7 @@
 
     const characters = [
       { 
-        id: 'warrior', name: '🗡️ ВОИН', desc: 'Классический боец',
-        bonus: '+20% урон ближнего боя',
+        id: 'warrior', name: '🗡️ ВОИН', desc: 'Классический боец',        bonus: '+20% урон ближнего боя',
         cost: 0,
         color: '#3498db',
         bodyColor: '#ffffff',
@@ -298,7 +293,6 @@
     function getCharacter() {
       return characters.find(c => c.id === state.characterId) || characters[0];
     }
-
     function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {} }
     function load() {
       try {
@@ -347,8 +341,7 @@
         if (type === 'sword') {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(120, now);
+          osc.type = 'sawtooth';          osc.frequency.setValueAtTime(120, now);
           osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
           gain.gain.setValueAtTime(0.3, now);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
@@ -397,8 +390,7 @@
             noise.start(t); noise.stop(t + 0.12);
           }
           const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sawtooth';
+          const gain = audioCtx.createGain();          osc.type = 'sawtooth';
           osc.frequency.setValueAtTime(80, now);
           osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
           gain.gain.setValueAtTime(0.4, now);
@@ -447,8 +439,7 @@
           gain.gain.setValueAtTime(0.15, now);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
           osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.start(now); osc.stop(now + 0.15);
-        }
+          osc.start(now); osc.stop(now + 0.15);        }
         else if (type === 'ultra') {
           const noise = audioCtx.createBufferSource();
           noise.buffer = createNoiseBuffer(0.4);
@@ -497,8 +488,7 @@
           gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
           osc2.connect(gain2); gain2.connect(audioCtx.destination);
           osc2.start(now + 0.1); osc2.stop(now + 0.25);
-        }
-        else if (type === 'arrow') {
+        }        else if (type === 'arrow') {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'sine';
@@ -547,8 +537,7 @@
     let keys = { left: false, right: false, up: false };
     let attackCooldown = 0, spawnTimer = 0, cameraShake = 0;
 
-    const weapons = [
-      { name: '🗡️ ДЕРЕВЯННЫЙ МЕЧ', desc: 'Стартовое оружие', cost: 0, dmg: 10, type: 'melee', range: 45, color: '#8b4513', color2: '#654321', sound: 'sword' },
+    const weapons = [      { name: '🗡️ ДЕРЕВЯННЫЙ МЕЧ', desc: 'Стартовое оружие', cost: 0, dmg: 10, type: 'melee', range: 45, color: '#8b4513', color2: '#654321', sound: 'sword' },
       { name: '⚔️ ЖЕЛЕЗНЫЙ МЕЧ', desc: 'Крепкий клинок', cost: 80, dmg: 15, type: 'melee', range: 55, color: '#7f8c8d', color2: '#95a5a6', sound: 'sword' },
       { name: '🗡️ СТАЛЬНОЙ МЕЧ', desc: 'Острая сталь', cost: 200, dmg: 20, type: 'melee', range: 65, color: '#bdc3c7', color2: '#ecf0f1', sound: 'sword' },
       { name: '⚔️ СЕРЕБРЯНЫЙ МЕЧ', desc: 'Благородный металл', cost: 400, dmg: 25, type: 'melee', range: 75, color: '#ecf0f1', color2: '#ffffff', sound: 'sword' },
@@ -597,8 +586,7 @@
         gunner:  { speed: 0.9 + lvl * 0.04, range: 280, shootCd: 70, color: '#34495e' },
         mage:    { speed: 0.7 + lvl * 0.03, range: 220, shootCd: 110, color: '#8e44ad' }
       }[type];
-      
-      return {
+            return {
         x: W + 30, y: GROUND_Y() - size, w: size, h: size,
         vx: isBossEnt ? -0.8 : -stats.speed, vy: 0,
         hp, maxHp: hp, damage: dmg, isBoss: isBossEnt,
@@ -647,8 +635,7 @@
       const off = e => { e.preventDefault(); keys[key] = false; btn.classList.remove('pressed'); };
       btn.addEventListener('touchstart', on, { passive: false });
       btn.addEventListener('touchend', off, { passive: false });
-      btn.addEventListener('touchcancel', off, { passive: false });
-      btn.addEventListener('mousedown', on);
+      btn.addEventListener('touchcancel', off, { passive: false });      btn.addEventListener('mousedown', on);
       btn.addEventListener('mouseup', off);
       btn.addEventListener('mouseleave', off);
     }
@@ -697,8 +684,7 @@
 
     function doAttack() {
       if (!gameRunning || gamePaused || !player) return;
-      if (attackCooldown > 0) return;
-      
+      if (attackCooldown > 0) return;      
       const weapon = getCurrentWeapon();
       const char = getCharacter();
       attackCooldown = weapon.type === 'melee' ? 20 : 15;
@@ -747,8 +733,7 @@
             color: weapon.color,
             life: 60,
             fromPlayer: true,
-            size: weapon.name.includes('СНАЙПЕРК') ? 6 : (weapon.name.includes('ДРОБОВИК') ? 3 : 4)
-          });
+            size: weapon.name.includes('СНАЙПЕРК') ? 6 : (weapon.name.includes('ДРОБОВИК') ? 3 : 4)          });
         }
         for (let i = 0; i < 4; i++) {
           particles.push({            x: baseX, y: baseY,
@@ -797,8 +782,7 @@
       for (let i = 0; i < 4; i++) {
         particles.push({
           x: e.x + e.w/2, y: e.y + e.h/2,
-          vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,
-          life: 15, maxLife: 15, type: 'spark', color: '#e74c3c', size: 3
+          vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5,          life: 15, maxLife: 15, type: 'spark', color: '#e74c3c', size: 3
         });
       }      if (e.hp <= 0) killEnemy(e);
       else playSound('hit');
@@ -835,22 +819,19 @@
       if (player.hp <= 0) { player.hp = 0; gameOver(); }
     }
 
-    // НОВАЯ ФУНКЦИЯ: Удаление союзника
+    // ИЗМЕНЕННАЯ ФУНКЦИЯ: Выбытие союзника из боя (без удаления из банды)
     function killHelper(h) {
       playSound('death');
       const idx = helpers.indexOf(h);
-      if (idx >= 0) helpers.splice(idx, 1);
-      
-      const gIdx = state.gang.findIndex(g => g.type === h.type);
-      if (gIdx >= 0) {
-        state.gang.splice(gIdx, 1);
-        save();
+      if (idx >= 0) {
+        helpers.splice(idx, 1);
       }
+      // Союзник больше не удаляется из state.gang. Он просто выбывает из текущего боя,
+      // но автоматически возродится в начале следующего уровня.
     }
 
     function update() {
-      if (!gameRunning || gamePaused || !player) return;
-      const char = getCharacter();
+      if (!gameRunning || gamePaused || !player) return;      const char = getCharacter();
       const effectiveSpeed = state.speed * char.mods.speed;
 
       if (keys.left) { player.vx = -effectiveSpeed; player.facing = -1; }
@@ -899,8 +880,7 @@
         const dx = (player.x + player.w/2) - (e.x + e.w/2);
         const dist = Math.abs(dx);
         const dir = Math.sign(dx);        
-        if (Math.abs(e.vx) > 0.3) e.walkFrame = (e.walkFrame + 0.15) % 4;
-        
+        if (Math.abs(e.vx) > 0.3) e.walkFrame = (e.walkFrame + 0.15) % 4;        
         if (e.type === 'warrior') {
           e.vx = dir * (e.isBoss ? 0.8 : (1 + state.level * 0.06));
           
@@ -949,8 +929,7 @@
             const sign = Math.sign(dx) || 1;
             a.x += sign * push;            b.x -= sign * push;
           }
-        }
-      }
+        }      }
       
       helpers.forEach((h, idx) => {
         const targetX = player.x - 35 - idx * 30;
@@ -999,8 +978,7 @@
               p.life = 0;            }
           });
         } else {
-          if (p.x > player.x && p.x < player.x + player.w && p.y > player.y && p.y < player.y + player.h) {
-            damagePlayer(p.damage, p.x);
+          if (p.x > player.x && p.x < player.x + player.w && p.y > player.y && p.y < player.y + player.h) {            damagePlayer(p.damage, p.x);
             p.life = 0;
           }
           // Урон союзникам от снарядов врагов
@@ -1049,8 +1027,7 @@
       const dy = (player.y + player.h/2) - (e.y + e.h/2);
       const dist = Math.sqrt(dx*dx + dy*dy);
       const vx = (dx / dist) * 5;
-      const vy = (dy / dist) * 5;
-      
+      const vy = (dy / dist) * 5;      
       let color, size;
       if (e.type === 'archer') { color = '#8b4513'; size = 4; playSound('arrow'); }
       else if (e.type === 'gunner') { color = '#2c3e50'; size = 3; playSound('gun'); }
@@ -1099,8 +1076,7 @@
         const tx = i * (W / 3) - 50;
         ctx.fillRect(tx + 35, GROUND_Y() - 230, 3, 30);
         ctx.beginPath();
-        ctx.moveTo(tx + 38, GROUND_Y() - 230);
-        ctx.lineTo(tx + 55, GROUND_Y() - 220);
+        ctx.moveTo(tx + 38, GROUND_Y() - 230);        ctx.lineTo(tx + 55, GROUND_Y() - 220);
         ctx.lineTo(tx + 38, GROUND_Y() - 210);
         ctx.fill();
       }
@@ -1149,8 +1125,7 @@
             ctx.lineTo(p.x + 3, p.y - 3);
             ctx.lineTo(p.x + 3, p.y + 3);
             ctx.fill();
-          } else {
-            ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+          } else {            ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
           }
         }
       });
@@ -1199,8 +1174,7 @@
       
       ctx.fillStyle = flash ? '#fff' : '#f5cba7';
       const headW = w * 0.7;
-      const headH = h * 0.3;
-      const headX = x + (w - headW) / 2;
+      const headH = h * 0.3;      const headX = x + (w - headW) / 2;
       const headY = y;
       ctx.fillRect(headX, headY, headW, headH);
       
@@ -1249,8 +1223,7 @@
       ctx.fillStyle = '#8b4513';
       ctx.fillRect(x + 2, bodyY + bodyH - 5, w - 4, 4);
       
-      ctx.fillStyle = '#f5cba7';
-      const armW = w * 0.2;
+      ctx.fillStyle = '#f5cba7';      const armW = w * 0.2;
       const armH = h * 0.3;
       const armY = bodyY + 5;
       const backArmX = p.facing > 0 ? x - armW + 2 : x + w - 2;
@@ -1299,8 +1272,7 @@
       
       ctx.fillStyle = flash ? '#fff' : e.color;
       const bodyH = h * 0.45;
-      const bodyY = y + h * 0.3;
-      ctx.fillRect(x + 2, bodyY, w - 4, bodyH);
+      const bodyY = y + h * 0.3;      ctx.fillRect(x + 2, bodyY, w - 4, bodyH);
       
       if (e.type === 'warrior') {
         ctx.fillStyle = '#7f8c8d';
@@ -1349,8 +1321,7 @@
         ctx.fillRect(headX + headW * 0.58, headY + headH * 0.45, headW * 0.29, headH * 0.1);
       } else if (e.type === 'mage') {
         ctx.fillStyle = '#f39c12';
-        ctx.fillRect(headX + headW * 0.2, headY + headH * 0.4, headW * 0.2, headH * 0.2);
-        ctx.fillRect(headX + headW * 0.6, headY + headH * 0.4, headW * 0.2, headH * 0.2);
+        ctx.fillRect(headX + headW * 0.2, headY + headH * 0.4, headW * 0.2, headH * 0.2);        ctx.fillRect(headX + headW * 0.6, headY + headH * 0.4, headW * 0.2, headH * 0.2);
         ctx.fillStyle = flash ? '#fff' : '#4a235a';
         ctx.fillRect(headX - 3, headY - 4, headW + 6, 8);
         ctx.fillRect(headX, headY - 8, headW, 6);
@@ -1400,7 +1371,6 @@
       
       drawHPBar(x, y - (e.isBoss ? 22 : 10), w, e.hp, e.maxHp, '#e74c3c');
     }
-
     function drawWeaponIdle(p, weapon) {
       const handX = p.facing > 0 ? p.x + p.w - 3 : p.x - 8;
       const handY = p.y + 25;
@@ -1449,8 +1419,7 @@
         const hx = p.facing > 0 ? handX - 4 : handX + swordLen - 4;
         ctx.fillRect(hx, handY - 2, 8, 10);
         
-        if (weapon.name.includes('ОГНЕННЫЙ')) {
-          ctx.fillStyle = '#f39c12';
+        if (weapon.name.includes('ОГНЕННЫЙ')) {          ctx.fillStyle = '#f39c12';
           for (let i = 0; i < 3; i++) ctx.fillRect(sx + i * 8 + Math.random() * 4, handY - 4 - Math.random() * 4, 3, 3);
         }
         if (weapon.name.includes('ГРОМОВОЙ')) {
@@ -1499,8 +1468,7 @@
         document.getElementById('btn-ultra').style.display = '';
         updateUltraBtn();
       }
-      save();
-    }
+      save();    }
     function updateUltraBtn() {
       const btn = document.getElementById('btn-ultra');
       if (!btn) return;
@@ -1549,8 +1517,7 @@
       document.getElementById('boss-dialogue-screen').classList.add('active');
       let fullText = texts.join('\n\n');
       let i = 0;
-      const interval = setInterval(() => {
-        if (i < fullText.length) { textEl.textContent += fullText[i]; i++; }
+      const interval = setInterval(() => {        if (i < fullText.length) { textEl.textContent += fullText[i]; i++; }
         else clearInterval(interval);
       }, 40);
       document.getElementById('btn-boss-continue').onclick = () => {
@@ -1599,8 +1566,7 @@
         div.innerHTML = `
           <h3>${c.name}</h3>
           <canvas class="char-preview" width="60" height="80"></canvas>
-          <p>${c.desc}</p>
-          <p class="bonus">${c.bonus}</p>
+          <p>${c.desc}</p>          <p class="bonus">${c.bonus}</p>
           <p class="price">${selected ? '✅ ВЫБРАН' : (owned ? '✅ ОТКРЫТ' : '💰 ' + c.cost)}</p>
           <button class="pixel-btn small" data-id="${c.id}" data-action="${selected ? '' : (owned ? 'select' : 'buy')}" ${(!owned && !canBuy) || selected ? 'disabled' : ''}>
             ${selected ? 'В ИГРЕ' : (owned ? 'ВЫБРАТЬ' : 'КУПИТЬ')}
@@ -1649,8 +1615,7 @@
       pctx.fillRect(w * 0.45, h * 0, w * 0.1, h * 0.07);
       pctx.fillRect(w * 0.6, h * 0, w * 0.1, h * 0.07);
       pctx.fillStyle = '#000';
-      pctx.fillRect(w * 0.35, h * 0.22, 3, 3);
-      pctx.fillRect(w * 0.55, h * 0.22, 3, 3);
+      pctx.fillRect(w * 0.35, h * 0.22, 3, 3);      pctx.fillRect(w * 0.55, h * 0.22, 3, 3);
     }
 
     function openShop() {
@@ -1699,8 +1664,7 @@
         div.querySelector('button').onclick = () => {
           if (canBuy) {
             state.coins -= w.cost;
-            state.unlockedWeapons.push(i);
-            state.weaponIndex = i;
+            state.unlockedWeapons.push(i);            state.weaponIndex = i;
             playSound('buy');
             save(); 
             openShop();
@@ -1750,7 +1714,6 @@
         grid.appendChild(div);
       });
     }
-
     const ultras = [
       { lvl: 1, name: '⚡ УДАР МОЛНИИ', desc: 'Урон x3 всем врагам', cost: 0 },
       { lvl: 2, name: '⚡⚡ ДВОЙНАЯ МОЛНИЯ', desc: 'Урон x4', cost: 500 },
@@ -1799,8 +1762,7 @@
       });
     }
 
-    const gangTypes = [
-      { type: 'warrior', name: '⚔️ ВОР', desc: 'Ближний бой, много HP', cost: 200 },
+    const gangTypes = [      { type: 'warrior', name: '⚔️ ВОР', desc: 'Ближний бой, много HP', cost: 200 },
       { type: 'archer', name: '🏹 ЛУЧНИК', desc: 'Дальний бой, быстро стреляет', cost: 300 },
       { type: 'mage', name: '🔮 МАГ', desc: 'Очень сильный урон', cost: 500 }
     ];
@@ -1849,8 +1811,7 @@
           const info = gangTypes.find(t => t.type === g.type);
           const cost = 150 + g.level * 100;
           const div = document.createElement('div');
-          div.className = 'shop-item';
-          div.innerHTML = `
+          div.className = 'shop-item';          div.innerHTML = `
             <h3>${info.name}</h3>
             <p>Уровень: ${g.level}</p>
             <p class="price">💰 ${cost}</p>
@@ -1899,8 +1860,7 @@
       document.getElementById('menu-screen').classList.remove('active');
       setTimeout(() => {
         resize();
-        if (state.level % 10 === 0) showBossDialogue('pre');
-        else startLevel();
+        if (state.level % 10 === 0) showBossDialogue('pre');        else startLevel();
       }, 100);
     };
     document.getElementById('btn-characters-menu').onclick = openCharacters;
@@ -1949,8 +1909,7 @@
       }
     };
     
-    document.getElementById('btn-confirm-delete').onclick = () => {
-      if (pendingDeleteIndex >= 0) {
+    document.getElementById('btn-confirm-delete').onclick = () => {      if (pendingDeleteIndex >= 0) {
         state.gang.splice(pendingDeleteIndex, 1);
         save();
         pendingDeleteIndex = -1;
