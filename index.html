@@ -1031,20 +1031,19 @@
             if (h.hp <= 0) killHelper(h);
             }
           });
-        } else if (e.type === 'pusher')
-  if (dist > e.stopRange + 20) {
-    e.vx = dir * 0.2;
-  } else if (dist < e.stopRange - 30) {
-    e.vx = -dir * 0.15;
-  } else {
-    e.vx *= 0.8;
-  }
-  
-  if (e.shootCooldown <= 0 && dist < e.stopRange + 50) {
-    shootArcAtPlayer(e);
-    e.shootCooldown = e.shootCd;
-  }
-        }
+} else if (e.type === 'pusher') {
+          if (dist > e.stopRange + 20) {
+            e.vx = dir * 0.2;
+          } else if (dist < e.stopRange - 30) {
+            e.vx = -dir * 0.15;
+          } else {
+            e.vx *= 0.8;
+          }
+          
+          if (e.shootCooldown <= 0 && dist < e.stopRange + 50) {
+            shootArcAtPlayer(e);
+            e.shootCooldown = e.shootCd;
+          }
         } else {
           if (dist > e.stopRange + 20) e.vx = dir * (0.8 + state.level * 0.03);
           else if (dist < e.stopRange - 20) e.vx = -dir * 0.5;
