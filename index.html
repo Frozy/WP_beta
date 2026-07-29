@@ -643,12 +643,12 @@
       const lvl = state.level;
       let type = forceType;
       if (!type) {
-        const r = Math.random();
-        if (lvl < 5) type = 'warrior';
-        else if (lvl < 10) type = r < 0.7 ? 'warrior' : 'archer';
-        else if (lvl < 20) type = r < 0.4 ? 'warrior' : (r < 0.7 ? 'archer' : (r < 0.9 ? 'gunner' : 'pusher'));
-        else if (lvl < 40) type = r < 0.3 ? 'warrior' : (r < 0.5 ? 'archer' : (r < 0.75 ? 'gunner' : (r < 0.9 ? 'pusher' : 'mage')));
-        else type = r < 0.2 ? 'warrior' : (r < 0.4 ? 'archer' : (r < 0.6 ? 'gunner' : (r < 0.8 ? 'pusher' : 'mage')));
+  const r = Math.random();
+  if (lvl < 5) type = 'warrior';
+  else if (lvl < 10) type = r < 0.7 ? 'warrior' : 'archer';
+  else if (lvl < 21) type = r < 0.4 ? 'warrior' : (r < 0.7 ? 'archer' : 'gunner');
+  else if (lvl < 40) type = r < 0.3 ? 'warrior' : (r < 0.5 ? 'archer' : (r < 0.75 ? 'gunner' : (r < 0.9 ? 'pusher' : 'mage')));
+  else type = r < 0.2 ? 'warrior' : (r < 0.4 ? 'archer' : (r < 0.6 ? 'gunner' : (r < 0.8 ? 'pusher' : 'mage')));
       }
       
       const bossMult = isBossEnt ? 3 : 1;
@@ -668,7 +668,7 @@
         archer:  { speed: 0.8 + lvl * 0.04, range: 250, shootCd: 90, color: '#d35400' },
         gunner:  { speed: 0.9 + lvl * 0.04, range: 280, shootCd: 70, color: '#34495e' },
         mage:    { speed: 0.7 + lvl * 0.03, range: 220, shootCd: 110, color: '#8e44ad' },
-        pusher:  { speed: 0.3 + lvl * 0.01, range: 350, shootCd: 150, color: '#5d4037' }
+        pusher:  { speed: (0.3 + lvl * 0.01) * 0.85, range: 450, shootCd: 150, color: '#5d4037' }
       }[type] || { speed: 1, range: 0, shootCd: 60, color: '#c0392b' };
       
       return {
@@ -1027,15 +1027,24 @@
             if (distH < e.w/2 + h.w/2 + 10 && e.attackCooldown <= 0) {
               h.hp -= Math.floor(e.damage * 0.8);
               h.hitFlash = 8;
-              e.attackCooldown = 60;              if (h.hp <= 0) killHelper(h);
+              e.attackCooldown = 60;              
+            if (h.hp <= 0) killHelper(h);
             }
           });
-        } else if (e.type === 'pusher') {
-          e.vx = dir * 0.2;
-          if (e.shootCooldown <= 0 && dist < e.stopRange + 50) {
-            shootArcAtPlayer(e);
-            e.shootCooldown = e.shootCd;
-          }
+        } else if (e.type === 'pusher')
+  if (dist > e.stopRange + 20) {
+    e.vx = dir * 0.2;
+  } else if (dist < e.stopRange - 30) {
+    e.vx = -dir * 0.15;
+  } else {
+    e.vx *= 0.8;
+  }
+  
+  if (e.shootCooldown <= 0 && dist < e.stopRange + 50) {
+    shootArcAtPlayer(e);
+    e.shootCooldown = e.shootCd;
+  }
+        }
         } else {
           if (dist > e.stopRange + 20) e.vx = dir * (0.8 + state.level * 0.03);
           else if (dist < e.stopRange - 20) e.vx = -dir * 0.5;
@@ -1174,7 +1183,8 @@
       const dx = (player.x + player.w/2) - (e.x + e.w/2);
       const dist = Math.abs(dx);
       
-      // ИСПРАВЛЕНО: более плавная траектория      const vx = Math.sign(dx) * 3; // Уменьшена горизонтальная скорость
+      // ИСПРАВЛЕНО: более плавная траектория      
+      const vx = Math.sign(dx) * 3; // Уменьшена горизонтальная скорость
       const vy = -6; // Фиксированная начальная скорость вверх
       
       playSound('cannon');
